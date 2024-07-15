@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Speed Card Memory Game</title>
     <style>
-        /* 간단한 스타일 추가 */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -29,6 +28,9 @@
         .red {
             color: red;
         }
+        .hidden {
+            visibility: hidden;
+        }
     </style>
 </head>
 <body>
@@ -36,16 +38,11 @@
     <button id="start-button">Start</button>
     <button id="stop-button" disabled>Stop</button>
     <div id="timer">Time: 0 seconds</div>
-    <div id="match-timer">Match Time: 0 seconds</div>
     <div id="game-area"></div>
     <div id="card-selection"></div>
-    
     <script>
         let startTime;
         let timerInterval;
-        let matchStartTime;
-        let matchTimerInterval;
-        let memorizeTime;
         let shuffledDeck = [];
         let currentCardIndex = 0;
         const gameArea = document.getElementById('game-area');
@@ -53,9 +50,7 @@
         const startButton = document.getElementById('start-button');
         const stopButton = document.getElementById('stop-button');
         const timer = document.getElementById('timer');
-        const matchTimer = document.getElementById('match-timer');
 
-        // 카드 덱 생성
         function createDeck() {
             const suits = ['♠', '♥', '♦', '♣'];
             const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
@@ -68,7 +63,6 @@
             return deck;
         }
 
-        // 덱을 섞는 함수
         function shuffleDeck(deck) {
             for (let i = deck.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -77,7 +71,6 @@
             return deck;
         }
 
-        // 타이머 시작
         function startTimer() {
             startTime = Date.now();
             timerInterval = setInterval(() => {
@@ -86,26 +79,10 @@
             }, 1000);
         }
 
-        // 타이머 정지
         function stopTimer() {
             clearInterval(timerInterval);
         }
 
-        // 매칭 타이머 시작
-        function startMatchTimer() {
-            matchStartTime = Date.now();
-            matchTimerInterval = setInterval(() => {
-                const elapsedTime = Math.floor((Date.now() - matchStartTime) / 1000);
-                matchTimer.textContent = `Match Time: ${elapsedTime} seconds`;
-            }, 1000);
-        }
-
-        // 매칭 타이머 정지
-        function stopMatchTimer() {
-            clearInterval(matchTimerInterval);
-        }
-
-        // 카드 요소 생성
         function createCardElement(card, hidden = false) {
             const cardElement = document.createElement('div');
             cardElement.className = 'card';
@@ -114,19 +91,16 @@
             return cardElement;
         }
 
-        // 게임 시작
         function startGame() {
             if (timerInterval) stopTimer();
-            if (matchTimerInterval) stopMatchTimer();
 
             shuffledDeck = shuffleDeck(createDeck());
             gameArea.innerHTML = '';
             cardSelection.innerHTML = '';
-            cardSelection.style.display = 'none'; // 카드 선택 영역 숨기기
+            cardSelection.style.display = 'none';
             startButton.disabled = true;
             stopButton.disabled = false;
             timer.textContent = 'Time: 0 seconds';
-            matchTimer.textContent = 'Match Time: 0 seconds';
             currentCardIndex = 0;
             startTimer();
 
@@ -135,41 +109,8 @@
                 cardElement.dataset.index = index;
                 gameArea.appendChild(cardElement);
             });
-        }
-
-        // 카드 선택
-        function selectCard(cardValue) {
-            const correctCard = shuffledDeck[currentCardIndex].value;
-
-            if (cardValue === correctCard) {
-                const cardElements = gameArea.children;
-                cardElements[currentCardIndex].textContent = cardValue;
-                cardElements[currentCardIndex].style.color = (shuffledDeck[currentCardIndex].suit === '♥' || shuffledDeck[currentCardIndex].suit === '♦') ? 'red' : 'black';
-                currentCardIndex++;
-
-                if (currentCardIndex === shuffledDeck.length) {
-                    stopMatchTimer();
-                    const matchTime = Math.floor((Date.now() - matchStartTime) / 1000);
-                    alert(`축하합니다! 모든 카드를 맞췄습니다.\n외우는 시간: ${memorizeTime}초\n맞추는 시간: ${matchTime}초`);
-                }
-            }
-        }
-
-        // 게임 정지
-        function stopGame() {
-            stopTimer();
-            memorizeTime = Math.floor((Date.now() - startTime) / 1000);
-            startMatchTimer();
-            cardSelection.style.display = 'block'; // 카드 선택 영역 표시
-            stopButton.disabled = true;
-
-            Array.from(gameArea.children).forEach(cardElement => {
-                cardElement.textContent = '?';
-                cardElement.style.color = 'black';
-            });
 
             const deck = createDeck();
-            cardSelection.innerHTML = '';
             deck.forEach((card, index) => {
                 const cardElement = createCardElement(card);
                 cardElement.addEventListener('click', () => selectCard(card.value));
@@ -182,8 +123,23 @@
             });
         }
 
+        function selectCard(cardValue) {
+            const correctCard = shuffledDeck[currentCardIndex].value;
+
+            if (cardValue === correctCard) {
+                const cardElements = gameArea.children;
+                cardElements[currentCardIndex].classList.add('hidden');
+                currentCardIndex++;
+
+                if (currentCardIndex === shuffledDeck.length) {
+                    stopTimer();
+                    alert('Congratulations! You matched all cards.');
+                }
+            }
+        }
+
         startButton.addEventListener('click', startGame);
-        stopButton.addEventListener('click', stopGame);
+        stopButton.addEventListener('click', stopTimer);
     </script>
 </body>
 </html>
