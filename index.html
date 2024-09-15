@@ -20,11 +20,16 @@
         input {
             padding: 8px;
             font-size: 16px;
+            width: 300px;
         }
         #message {
             margin-top: 20px;
             font-size: 18px;
             color: green;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
         }
     </style>
 </head>
@@ -39,15 +44,19 @@
     </select>
 
     <div id="wordContainer" class="word-container">
-        <!-- 한글 단어와 입력창이 여기에 표시됩니다 -->
+        <div class="word-item">
+            <label id="koreanWord">여기에 한글 단어가 표시됩니다</label>
+            <input type="text" id="englishInput" placeholder="영어 단어를 입력하세요">
+        </div>
     </div>
 
     <p id="message"></p>
 
-    <button onclick="checkAnswers()">제출</button>
+    <button onclick="checkAnswer()">제출</button>
 
     <script>
         let correctWords = [];
+        let currentWordIndex = 0;
 
         function loadWords() {
             const level = document.getElementById('levelSelect').value;
@@ -69,48 +78,34 @@
                     const sheetName = workbook.SheetNames[0];
                     const sheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                    displayWords(jsonData);
+                    correctWords = jsonData.slice(1); // 첫 번째 행은 헤더이므로 제외
+                    currentWordIndex = 0; // 처음부터 시작
+                    displayNextWord();
                 });
         }
 
-        function displayWords(data) {
-            const wordContainer = document.getElementById('wordContainer');
-            wordContainer.innerHTML = ''; // 기존 내용을 초기화합니다.
-
-            correctWords = data.slice(1); // 첫 번째 행은 헤더이므로 제외
-
-            correctWords.forEach((pair, index) => {
-                const [englishWord, koreanWord] = pair;
-
-                // 한글 단어와 입력란을 생성
-                const wordItem = document.createElement('div');
-                wordItem.classList.add('word-item');
-                wordItem.innerHTML = `
-                    <label for="input${index}">${koreanWord}</label>
-                    <input type="text" id="input${index}" placeholder="영어 단어를 입력하세요">
-                `;
-                wordContainer.appendChild(wordItem);
-            });
+        function displayNextWord() {
+            if (currentWordIndex < correctWords.length) {
+                const [englishWord, koreanWord] = correctWords[currentWordIndex];
+                document.getElementById('koreanWord').textContent = koreanWord;
+                document.getElementById('englishInput').value = '';
+                document.getElementById('message').textContent = '';
+            } else {
+                document.getElementById('koreanWord').textContent = '축하합니다! 모든 단어를 맞추셨습니다!';
+                document.getElementById('englishInput').style.display = 'none';
+                document.querySelector('button').style.display = 'none';
+            }
         }
 
-        function checkAnswers() {
-            let correctCount = 0;
-            correctWords.forEach((pair, index) => {
-                const [englishWord, koreanWord] = pair;
-                const userAnswer = document.getElementById(`input${index}`).value.trim().toLowerCase();
-                if (userAnswer === englishWord.toLowerCase()) {
-                    correctCount++;
-                    document.getElementById(`input${index}`).style.backgroundColor = 'lightgreen';
-                } else {
-                    document.getElementById(`input${index}`).style.backgroundColor = 'lightcoral';
-                }
-            });
-
-            const messageElement = document.getElementById('message');
-            if (correctCount === correctWords.length) {
-                messageElement.textContent = "축하합니다! 모든 단어를 맞췄습니다!";
+        function checkAnswer() {
+            const [englishWord, koreanWord] = correctWords[currentWordIndex];
+            const userAnswer = document.getElementById('englishInput').value.trim().toLowerCase();
+            if (userAnswer === englishWord.toLowerCase()) {
+                document.getElementById('message').textContent = "정답입니다!";
+                currentWordIndex++;
+                displayNextWord();
             } else {
-                messageElement.textContent = `총 ${correctWords.length}개 중 ${correctCount}개를 맞췄습니다.`;
+                document.getElementById('message').textContent = "틀렸습니다. 다시 시도해 보세요.";
             }
         }
 
