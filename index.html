@@ -6,7 +6,6 @@
     <title>Word Master: Vocabulary Challenge</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.2/xlsx.full.min.js"></script>
     <style>
-        /* CSS 코드 개선 */
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #f4f4f4;
@@ -33,12 +32,6 @@
             animation: fadeIn 1s ease;
         }
 
-        select, input, button {
-            width: 80%;
-            max-width: 500px;
-            box-sizing: border-box;
-        }
-
         select {
             padding: 12px;
             font-size: 1.2em;
@@ -46,6 +39,7 @@
             border: 2px solid #3498db;
             border-radius: 6px;
             outline: none;
+            width: 80%;
             transition: all 0.3s ease;
         }
 
@@ -63,6 +57,8 @@
         input {
             padding: 15px;
             font-size: 1.2em;
+            width: 80%;
+            max-width: 500px;
             border: 2px solid #3498db;
             border-radius: 6px;
             outline: none;
@@ -177,22 +173,6 @@
             font-size: 0.9em;
             color: #7f8c8d;
         }
-
-        @media screen and (max-width: 600px) {
-            h1 {
-                font-size: 2em;
-            }
-            .word-item {
-                font-size: 1.5em;
-            }
-            select, input, button {
-                width: 100%;
-            }
-            button {
-                width: 100%;
-                margin: 5px 0;
-            }
-        }
     </style>
 </head>
 <body>
@@ -202,7 +182,6 @@
 
         <p>레벨을 선택하세요:</p>
         <select id="levelSelect">
-            <option value="">레벨 선택</option>
             <option value="A1">A1</option>
             <option value="A2">A2</option>
             <option value="B1">B1</option>
@@ -219,7 +198,7 @@
 
         <div class="word-container">
             <div class="word-item" id="koreanWord">여기에 한글 단어가 표시됩니다</div>
-            <input type="text" id="englishInput" placeholder="영어 단어를 입력하세요">
+            <input type="text" id="englishInput" placeholder="영어 단어를 입력하세요" onkeypress="handleKeyPress(event)">
         </div>
 
         <button onclick="checkAnswer()">제출</button>
@@ -246,82 +225,69 @@
     </footer>
 
     <script>
-        (function() {
-            'use strict';
+        let correctWords = [];
+        let currentWordIndex = 0;
+        let score = 0;
+        let hintGiven = false;
+        let timeLimit = 30;
+        let timer;
+        let incorrectWords = [];
 
-            // 전역 변수 최소화
-            let correctWords = [];
-            let currentWordIndex = 0;
-            let score = 0;
-            let hintGiven = false;
-            let timeLimit = 30;
-            let timer;
-            let incorrectWords = [];
-
-            // 이벤트 리스너 등록
-            document.getElementById('englishInput').addEventListener('keydown', handleKeyPress);
-
-            // 게임 시작 함수
-            async function startGame() {
-                const level = document.getElementById('levelSelect').value;
-                if (level) {
-                    document.getElementById('mainMenu').style.display = 'none';
-                    document.getElementById('gameContainer').style.display = 'block';
-                    await loadWords(level);
-                } else {
-                    alert("레벨을 선택해주세요!");
-                }
+        function startGame() {
+            const level = document.getElementById('levelSelect').value;
+            if (level) {
+                document.getElementById('mainMenu').style.display = 'none';
+                document.getElementById('gameContainer').style.display = 'block';
+                loadWords(level);
+            } else {
+                alert("레벨을 선택해주세요!");
             }
+        }
 
-            // 타이머 시작 함수
-            function startTimer() {
-                clearInterval(timer);
-                let timeLeft = timeLimit;
+        function startTimer() {
+            clearInterval(timer);
+            let timeLeft = timeLimit;
+            document.getElementById('timerDisplay').textContent = `남은 시간: ${timeLeft}초`;
+
+            timer = setInterval(() => {
+                timeLeft--;
                 document.getElementById('timerDisplay').textContent = `남은 시간: ${timeLeft}초`;
 
-                timer = setInterval(() => {
-                    timeLeft--;
-                    document.getElementById('timerDisplay').textContent = `남은 시간: ${timeLeft}초`;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    skipWord();
+                }
+            }, 1000);
+        }
 
-                    if (timeLeft <= 0) {
-                        clearInterval(timer);
-                        skipWord();
-                    }
-                }, 1000);
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function loadWords(level) {
+            let fileName;
+
+            if (level ===
+                'A1') {
+                fileName = 'A1WORD.xlsx';
+            } else if (level === 'A2') {
+                fileName = 'A2WORD.xlsx';
+            } else if (level === 'B1') {
+                fileName = 'B1WORD.xlsx';
             }
 
-            // 배열 섞기 함수
-            function shuffleArray(array) {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
-                }
-                return array;
-            }
-
-            // 단어 로드 함수
-            async function loadWords(level) {
-                let fileName;
-
-                if (level === 'A1') {
-                    fileName = 'A1WORD.xlsx';
-                } else if (level === 'A2') {
-                    fileName = 'A2WORD.xlsx';
-                } else if (level === 'B1') {
-                    fileName = 'B1WORD.xlsx';
-                }
-
-                try {
-                    const response = await fetch(fileName);
-                    if (!response.ok) {
-                        throw new Error(`Failed to load ${fileName}`);
-                    }
-                    const data = await response.arrayBuffer();
+            fetch(fileName)
+                .then(response => response.arrayBuffer())
+                .then(data => {
                     const workbook = XLSX.read(data, { type: 'array' });
                     const sheetName = workbook.SheetNames[0];
                     const sheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                    correctWords = shuffleArray(jsonData.slice(1)); // 헤더 행 제외하고 섞음
+                    correctWords = shuffleArray(jsonData.slice(1)); // 첫 번째 행은 헤더이므로 제외하고 섞음
                     currentWordIndex = 0;
                     hintGiven = false;
                     score = 0;
@@ -329,140 +295,130 @@
                     document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
                     updateProgressBar();
                     displayNextWord();
-                } catch (error) {
-                    alert('단어 데이터를 불러오는 데 실패했습니다. 다시 시도해주세요.');
-                    console.error(error);
-                    goHome();
-                }
-            }
+                });
+        }
 
-            // 다음 단어 표시 함수
-            function displayNextWord() {
-                if (currentWordIndex < correctWords.length) {
-                    const [englishWord, koreanWord] = correctWords[currentWordIndex];
-                    document.getElementById('koreanWord').textContent = koreanWord;
-                    document.getElementById('englishInput').value = '';
-                    document.getElementById('message').textContent = '';
-                    document.getElementById('englishInput').focus();
-                    hintGiven = false;
-                    startTimer(); // 타이머 시작
-                } else {
-                    clearInterval(timer); // 모든 단어를 맞추면 타이머 종료
-                    document.getElementById('koreanWord').textContent = '축하합니다! 모든 단어를 맞추셨습니다!';
-                    document.getElementById('englishInput').style.display = 'none';
-                    document.querySelector('.next-btn').style.display = 'none';
-                    document.querySelector('.hint-btn').style.display = 'none';
-                    document.querySelector('button').style.display = 'none';
-
-                    if (incorrectWords.length > 0) {
-                        setTimeout(showReviewMode, 2000); // 복습 모드로 전환
-                    }
-                }
-            }
-
-            // 정답 확인 함수
-            function checkAnswer() {
+        function displayNextWord() {
+            if (currentWordIndex < correctWords.length) {
                 const [englishWord, koreanWord] = correctWords[currentWordIndex];
-                const userAnswer = document.getElementById('englishInput').value.trim().toLowerCase();
+                document.getElementById('koreanWord').textContent = koreanWord;
+                document.getElementById('englishInput').value = '';
+                document.getElementById('message').textContent = '';
+                document.getElementById('englishInput').focus();
+                hintGiven = false;
+                startTimer(); // 타이머 시작
+            } else {
+                clearInterval(timer); // 모든 단어를 맞추면 타이머 종료
+                document.getElementById('koreanWord').textContent = '축하합니다! 모든 단어를 맞추셨습니다!';
+                document.getElementById('englishInput').style.display = 'none';
+                document.querySelector('.next-btn').style.display = 'none';
+                document.querySelector('.hint-btn').style.display = 'none';
+                document.querySelector('button').style.display = 'none';
 
-                if (userAnswer === englishWord.toLowerCase()) {
-                    document.getElementById('message').textContent = "정답입니다!";
-                    document.getElementById('message').style.color = "#2ecc71"; // 정답일 때 초록색
-                    score += 10; // 정답 맞추면 10점 추가
-                    document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
-                    currentWordIndex++;
-                    setTimeout(() => {
-                        displayNextWord();
-                        updateProgressBar();
-                    }, 1000); // 1초 후 다음 단어 표시
-                } else {
-                    document.getElementById('message').textContent = `틀렸습니다. 정답은 '${englishWord}' 입니다.`;
-                    document.getElementById('message').style.color = "#e74c3c"; // 틀렸을 때 빨간색
-                    incorrectWords.push([englishWord, koreanWord]); // 틀린 단어 저장
-                    currentWordIndex++;
-                    setTimeout(() => {
-                        displayNextWord();
-                        updateProgressBar();
-                    }, 3000); // 3초 후 다음 단어 표시
+                if (incorrectWords.length > 0) {
+                    setTimeout(showReviewMode, 2000); // 복습 모드로 전환
                 }
             }
+        }
 
-            // 단어 건너뛰기 함수
-            function skipWord() {
-                const [englishWord, koreanWord] = correctWords[currentWordIndex];
-                document.getElementById('message').textContent = `정답은 '${englishWord}' 입니다.`;
-                document.getElementById('message').style.color = "#e74c3c"; // 정답 표시
+        function checkAnswer() {
+            const [englishWord, koreanWord] = correctWords[currentWordIndex];
+            const userAnswer = document.getElementById('englishInput').value.trim().toLowerCase();
+
+            if (userAnswer === englishWord.toLowerCase()) {
+                document.getElementById('message').textContent = "정답입니다!";
+                document.getElementById('message').style.color = "#2ecc71"; // 정답일 때 초록색
+                score += 10; // 정답 맞추면 10점 추가
+                document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
+                currentWordIndex++;
+                setTimeout(() => {
+                    displayNextWord();
+                    updateProgressBar();
+                }, 1000); // 1초 후 다음 단어 표시
+            } else {
+                document.getElementById('message').textContent = `틀렸습니다. 정답은 '${englishWord}' 입니다.`;
+                document.getElementById('message').style.color = "#e74c3c"; // 틀렸을 때 빨간색
                 incorrectWords.push([englishWord, koreanWord]); // 틀린 단어 저장
                 currentWordIndex++;
                 setTimeout(() => {
-                    updateProgressBar();
                     displayNextWord();
-                }, 3000); // 3초 후 다음 문제로 넘어감
+                    updateProgressBar();
+                }, 3000); // 3초 후 다음 단어 표시
             }
+        }
 
-            // 힌트 표시 함수
-            function showHint() {
-                if (!hintGiven) {
-                    const [englishWord] = correctWords[currentWordIndex];
-                    const hint = englishWord.slice(0, Math.ceil(englishWord.length / 2)) + "..."; // 단어의 절반을 힌트로 제공
-                    document.getElementById('message').textContent = `힌트: ${hint}`;
-                    document.getElementById('message').style.color = "#f39c12"; // 힌트 색상
-                    score -= 5; // 힌트를 사용하면 5점 차감
-                    document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
-                    hintGiven = true; // 힌트 제공 후 다시 제공되지 않도록 설정
-                } else {
-                    document.getElementById('message').textContent = "이미 힌트를 보셨습니다!";
-                }
+        function skipWord() {
+            const [englishWord] = correctWords[currentWordIndex];
+            document.getElementById('message').textContent = `정답은 '${englishWord}' 입니다.`;
+            document.getElementById('message').style.color = "#e74c3c"; // 정답 표시
+            incorrectWords.push([englishWord, correctWords[currentWordIndex][1]]); // 틀린 단어 저장
+            currentWordIndex++;
+            setTimeout(() => {
+                updateProgressBar();
+                displayNextWord();
+            }, 3000); // 3초 후 다음 문제로 넘어감
+        }
+
+        function showHint() {
+            if (!hintGiven) {
+                const [englishWord] = correctWords[currentWordIndex];
+                const hint = englishWord.slice(0, Math.ceil(englishWord.length / 2)) + "..."; // 단어의 절반을 힌트로 제공
+                document.getElementById('message').textContent = `힌트: ${hint}`;
+                document.getElementById('message').style.color = "#f39c12"; // 힌트 색상
+                score -= 5; // 힌트를 사용하면 5점 차감
+                document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
+                hintGiven = true; // 힌트 제공 후 다시 제공되지 않도록 설정
+            } else {
+                document.getElementById('message').textContent = "이미 힌트를 보셨습니다!";
             }
+        }
 
-            // 복습 모드로 전환 함수
-            function showReviewMode() {
-                document.getElementById('gameContainer').style.display = 'none';
-                document.getElementById('reviewContainer').style.display = 'block';
-                const reviewWordsContainer = document.getElementById('reviewWords');
-                reviewWordsContainer.innerHTML = '';
+        // 복습 모드로 전환하는 함수
+        function showReviewMode() {
+            document.getElementById('gameContainer').style.display = 'none';
+            document.getElementById('reviewContainer').style.display = 'block';
+            const reviewWordsContainer = document.getElementById('reviewWords');
+            reviewWordsContainer.innerHTML = '';
 
-                if (incorrectWords.length > 0) {
-                    incorrectWords.forEach(([englishWord, koreanWord]) => {
-                        const wordItem = document.createElement('p');
-                        wordItem.textContent = `${koreanWord} - ${englishWord}`;
-                        reviewWordsContainer.appendChild(wordItem);
-                    });
-                } else {
-                    reviewWordsContainer.textContent = '틀린 단어가 없습니다!';
-                }
+            if (incorrectWords.length > 0) {
+                incorrectWords.forEach(([englishWord, koreanWord]) => {
+                    const wordItem = document.createElement('p');
+                    wordItem.textContent = `${koreanWord} - ${englishWord}`;
+                    reviewWordsContainer.appendChild(wordItem);
+                });
+            } else {
+                reviewWordsContainer.textContent = '틀린 단어가 없습니다!';
             }
+        }
 
-            // 프로그레스 바 업데이트 함수
-            function updateProgressBar() {
-                const progressBar = document.getElementById('progressBar');
-                const progress = ((currentWordIndex / correctWords.length) * 100).toFixed(2);
-                progressBar.style.width = `${progress}%`;
+        // 프로그레스 바 업데이트 함수
+        function updateProgressBar() {
+            const progressBar = document.getElementById('progressBar');
+            const progress = ((currentWordIndex / correctWords.length) * 100).toFixed(2);
+            progressBar.style.width = `${progress}%`;
+        }
+
+        // 홈으로 가는 함수
+        function goHome() {
+            document.getElementById('gameContainer').style.display = 'none';
+            document.getElementById('reviewContainer').style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'block';
+            clearInterval(timer); // 홈으로 돌아가면 타이머 정지
+        }
+
+        // Enter 키로 정답 제출
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                checkAnswer();
             }
+        }
 
-            // 홈으로 이동 함수
-            function goHome() {
-                document.getElementById('gameContainer').style.display = 'none';
-                document.getElementById('reviewContainer').style.display = 'none';
-                document.getElementById('mainMenu').style.display = 'block';
-                clearInterval(timer); // 홈으로 돌아가면 타이머 정지
-            }
-
-            // Enter 키로 정답 제출
-            function handleKeyPress(event) {
-                if (event.key === "Enter") {
-                    event.preventDefault(); // 기본 동작 방지
-                    checkAnswer();
-                }
-            }
-
-            // 초기 설정
-            window.addEventListener('load', () => {
-                document.getElementById('mainMenu').style.display = 'block';
-                document.getElementById('gameContainer').style.display = 'none';
-                document.getElementById('reviewContainer').style.display = 'none';
-            });
-        })();
+        // 처음 시작할 때 첫 화면 로드
+        window.onload = () => {
+            document.getElementById('mainMenu').style.display = 'block';
+            document.getElementById('gameContainer').style.display = 'none';
+            document.getElementById('reviewContainer').style.display = 'none';
+        };
     </script>
 
 </body>
