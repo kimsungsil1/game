@@ -167,8 +167,19 @@
         let currentWordIndex = 0;
         let score = 0;
         let correctAnswerGiven = false; // 정답을 입력했는지 여부
+        let timeLeft = 30; // 초기 시간
+        let timer; // 타이머 변수
 
         document.getElementById('startButton').addEventListener('click', startGame); // 버튼 클릭 시 게임 시작
+
+        // Fisher-Yates 알고리즘을 이용해 배열을 섞는 함수
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]]; // 요소 위치를 서로 바꿈
+            }
+            return array;
+        }
 
         function startGame() {
             const level = document.getElementById('levelSelect').value;
@@ -204,7 +215,7 @@
                     const sheetName = workbook.SheetNames[0];
                     const sheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                    correctWords = jsonData.slice(1); // 첫 번째 행은 헤더이므로 제외
+                    correctWords = shuffleArray(jsonData.slice(1)); // 배열을 섞음
                     currentWordIndex = 0;
                     score = 0;
                     correctAnswerGiven = false;
@@ -219,24 +230,41 @@
                 });
         }
 
+        function startTimer() {
+            timeLeft = 30; // 매 문제마다 30초로 리셋
+            document.getElementById('timerDisplay').textContent = `남은 시간: ${timeLeft}초`;
+            clearInterval(timer); // 기존 타이머가 있을 경우 초기화
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timerDisplay').textContent = `남은 시간: ${timeLeft}초`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer); // 시간이 다 되면 타이머를 정지하고 다음 문제로 이동
+                    skipWord(); // 자동으로 다음 문제로 넘기기
+                }
+            }, 1000); // 1초마다 감소
+        }
+
         function displayNextWord() {
             if (currentWordIndex < correctWords.length) {
-                const [englishWord, koreanWord] = correctWords[currentWordIndex];
+                const
+[englishWord, koreanWord] = correctWords[currentWordIndex];
                 document.getElementById('koreanWord').textContent = koreanWord;
                 document.getElementById('englishInput').value = '';
                 document.getElementById('message').textContent = '';
                 document.getElementById('englishInput').focus();
                 correctAnswerGiven = false; // 새로운 문제로 넘어갈 때 정답 여부 리셋
+                startTimer(); // 타이머 시작
             } else {
                 document.getElementById('koreanWord').textContent = '축하합니다! 모든 단어를 맞추셨습니다!';
                 document.getElementById('englishInput').style.display = 'none';
                 document.querySelector('button').style.display = 'none';
+                clearInterval(timer); // 게임이 끝나면 타이머 정지
             }
         }
 
         function checkAnswer() {
-            const [englishWord
-] = correctWords[currentWordIndex];
+            const [englishWord] = correctWords[currentWordIndex];
             const userAnswer = document.getElementById('englishInput').value.trim().toLowerCase();
 
             if (userAnswer === englishWord.toLowerCase()) {
@@ -286,6 +314,7 @@
         function goHome() {
             document.getElementById('gameContainer').style.display = 'none';
             document.getElementById('mainMenu').style.display = 'block';
+            clearInterval(timer); // 홈으로 돌아갈 때 타이머 정지
         }
 
         // 프로그레스 바 업데이트 함수
