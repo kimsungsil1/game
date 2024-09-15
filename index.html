@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>영어 단어 맞추기 게임</title>
+    <title>Word Master: Vocabulary Challenge</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.2/xlsx.full.min.js"></script>
     <style>
         /* 세련된 디자인: 미니멀리즘 스타일 */
@@ -152,14 +152,16 @@
 <body>
 
     <div class="container" id="mainMenu">
-        <h1>영어 단어 맞추기 게임</h1>
+        <h1>Word Master: Vocabulary Challenge</h1>
 
         <p>레벨을 선택하세요:</p>
-        <select id="levelSelect" onchange="startGame()">
+        <select id="levelSelect">
             <option value="A1">A1</option>
             <option value="A2">A2</option>
             <option value="B1">B1</option>
         </select>
+
+        <button onclick="startGame()">게임 시작</button>
     </div>
 
     <div class="container" id="gameContainer" style="display:none;">
@@ -190,6 +192,7 @@
         let currentWordIndex = 0;
         let hintGiven = false;
 
+        // 게임 시작 함수 (시작 버튼을 클릭한 후 실행)
         function startGame() {
             const level = document.getElementById('levelSelect').value;
             document.getElementById('mainMenu').style.display = 'none';
@@ -246,7 +249,8 @@
                 document.getElementById('englishInput').style.display = 'none';
                 document.querySelector('.next-btn').style.display = 'none';
                 document.querySelector('.hint-btn').style.display = 'none';
-                document.querySelector('button').style.display = 'none';
+                document.querySelector('button
+                ').style.display = 'none';
             }
         }
 
@@ -254,8 +258,7 @@
             const [englishWord, koreanWord] = correctWords[currentWordIndex];
             const userAnswer = document.getElementById('englishInput').value.trim().toLowerCase();
 
-            if (
-            userAnswer === englishWord.toLowerCase()) {
+            if (userAnswer === englishWord.toLowerCase()) {
                 document.getElementById('message').textContent = "정답입니다!";
                 document.getElementById('message').style.color = "#2ecc71"; // 정답일 때 초록색
                 currentWordIndex++;
