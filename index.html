@@ -6,40 +6,46 @@
     <title>Word Master: Vocabulary Challenge</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.2/xlsx.full.min.js"></script>
     <style>
-        /* 세련된 디자인: 미니멀리즘 스타일 */
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #fdfdfd;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
             color: #2c3e50;
             text-align: center;
             padding: 20px;
             margin: 0;
-            line-height: 1.6;
         }
 
         h1 {
-            font-size: 2.4em;
+            font-size: 2.5em;
+            color: #2980b9;
             margin-bottom: 20px;
+            animation: fadeInDown 1s ease;
         }
 
         .container {
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 1s ease;
         }
 
-        .status-bar {
-            display: flex;
-            justify-content: space-between;
+        select {
+            padding: 12px;
             font-size: 1.2em;
             margin-bottom: 20px;
+            border: 2px solid #3498db;
+            border-radius: 6px;
+            outline: none;
+            width: 80%;
+            transition: all 0.3s ease;
         }
 
         .word-container {
             margin-top: 20px;
+            animation: fadeInUp 1s ease;
         }
 
         .word-item {
@@ -54,9 +60,10 @@
             width: 80%;
             max-width: 500px;
             border: 2px solid #3498db;
-            border-radius: 5px;
+            border-radius: 6px;
             outline: none;
             margin-bottom: 20px;
+            transition: border-color 0.3s ease;
         }
 
         input:focus {
@@ -69,20 +76,24 @@
             color: white;
             background-color: #3498db;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
             margin: 10px;
             width: 45%;
+            transition: background-color 0.3s ease, transform 0.1s ease;
         }
 
         button:hover {
             background-color: #2980b9;
         }
 
+        button:active {
+            transform: scale(0.98);
+        }
+
         #message {
             margin-top: 20px;
             font-size: 1.2em;
-            color: #e74c3c;
         }
 
         .next-btn {
@@ -109,13 +120,13 @@
             background-color: #2ecc71;
         }
 
-        /* 프로그레스 바 */
         .progress-bar {
             width: 100%;
             background-color: #e0e0e0;
             border-radius: 25px;
             margin-top: 20px;
             height: 20px;
+            overflow: hidden;
         }
 
         .progress-bar-fill {
@@ -123,19 +134,38 @@
             width: 0;
             background-color: #3498db;
             border-radius: 25px;
-            transition: width 0.5s ease-in-out;
+            transition: width 0.5s ease;
         }
 
-        /* 반응형 디자인 */
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 1.8em;
+        /* 애니메이션 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
             }
-            select, input {
-                width: 90%;
+            to {
+                opacity: 1;
             }
-            button {
-                width: 90%;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
@@ -177,7 +207,6 @@
         <button class="hint-btn" onclick="showHint()">힌트 보기</button>
         <button class="home-btn" onclick="goHome()">홈으로</button>
 
-        <!-- 프로그레스 바 -->
         <div class="progress-bar">
             <div class="progress-bar-fill" id="progressBar"></div>
         </div>
@@ -197,7 +226,6 @@
         let timeLimit = 30;
         let timer;
 
-        // 게임 시작 함수
         function startGame() {
             const level = document.getElementById('levelSelect').value;
             if (level) {
@@ -225,7 +253,6 @@
             }, 1000);
         }
 
-        // 배열을 랜덤하게 섞는 함수
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -265,14 +292,13 @@
 
         function displayNextWord() {
             if (currentWordIndex < correctWords.length) {
-                const [englishWord, koreanWord
-                ] = correctWords[currentWordIndex];
+                const [englishWord, koreanWord] = correctWords[currentWordIndex];
                 document.getElementById('koreanWord').textContent = koreanWord;
                 document.getElementById('englishInput').value = '';
                 document.getElementById('message').textContent = '';
                 document.getElementById('englishInput').focus();
-                hintGiven = false; // 새로운 문제로 넘어갈 때 힌트 리셋
-                startTimer(); // 다음 문제로 넘어갈 때 타이머 시작
+                hintGiven = false;
+                startTimer(); // 타이머 시작
             } else {
                 clearInterval(timer); // 모든 단어를 맞추면 타이머 종료
                 document.getElementById('koreanWord').textContent = '축하합니다! 모든 단어를 맞추셨습니다!';
