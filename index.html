@@ -104,6 +104,14 @@
             background-color: #e67e22;
         }
 
+        .home-btn {
+            background-color: #27ae60;
+        }
+
+        .home-btn:hover {
+            background-color: #2ecc71;
+        }
+
         /* 프로그레스 바 */
         .progress-bar {
             width: 100%;
@@ -133,28 +141,37 @@
                 width: 90%;
             }
         }
+
+        footer {
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
+    <div class="container" id="mainMenu">
         <h1>영어 단어 맞추기 게임</h1>
 
         <p>레벨을 선택하세요:</p>
-        <select id="levelSelect" onchange="loadWords()">
+        <select id="levelSelect" onchange="startGame()">
             <option value="A1">A1</option>
             <option value="A2">A2</option>
             <option value="B1">B1</option>
         </select>
+    </div>
 
+    <div class="container" id="gameContainer" style="display:none;">
         <div class="word-container">
             <div class="word-item" id="koreanWord">여기에 한글 단어가 표시됩니다</div>
-            <input type="text" id="englishInput" placeholder="영어 단어를 입력하세요">
+            <input type="text" id="englishInput" placeholder="영어 단어를 입력하세요" onkeypress="handleKeyPress(event)">
         </div>
 
         <button onclick="checkAnswer()">제출</button>
         <button class="next-btn" onclick="skipWord()">다음으로 넘기기</button>
         <button class="hint-btn" onclick="showHint()">힌트 보기</button>
+        <button class="home-btn" onclick="goHome()">홈으로</button>
 
         <!-- 프로그레스 바 -->
         <div class="progress-bar">
@@ -164,10 +181,21 @@
         <p id="message"></p>
     </div>
 
+    <footer>
+        사이트 제작: 김성실 | 장애 문의: <a href="mailto:sungsil.kim@lcnine.kr">sungsil.kim@lcnine.kr</a>
+    </footer>
+
     <script>
         let correctWords = [];
         let currentWordIndex = 0;
         let hintGiven = false;
+
+        function startGame() {
+            const level = document.getElementById('levelSelect').value;
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('gameContainer').style.display = 'block';
+            loadWords(level);
+        }
 
         // 배열을 랜덤하게 섞는 함수
         function shuffleArray(array) {
@@ -178,8 +206,7 @@
             return array;
         }
 
-        function loadWords() {
-            const level = document.getElementById('levelSelect').value;
+        function loadWords(level) {
             let fileName;
 
             // 선택한 레벨에 맞는 파일 이름 설정
@@ -209,7 +236,8 @@
         function displayNextWord() {
             if (currentWordIndex < correctWords.length) {
                 const [englishWord, koreanWord] = correctWords[currentWordIndex];
-                document.getElementById('koreanWord').textContent = koreanWord;                document.getElementById('englishInput').value = '';
+                document.getElementById('koreanWord').textContent = koreanWord;
+                document.getElementById('englishInput').value = '';
                 document.getElementById('message').textContent = '';
                 document.getElementById('englishInput').focus();
                 hintGiven = false; // 새로운 문제로 넘어갈 때 힌트 리셋
@@ -226,7 +254,8 @@
             const [englishWord, koreanWord] = correctWords[currentWordIndex];
             const userAnswer = document.getElementById('englishInput').value.trim().toLowerCase();
 
-            if (userAnswer === englishWord.toLowerCase()) {
+            if (
+            userAnswer === englishWord.toLowerCase()) {
                 document.getElementById('message').textContent = "정답입니다!";
                 document.getElementById('message').style.color = "#2ecc71"; // 정답일 때 초록색
                 currentWordIndex++;
@@ -265,10 +294,25 @@
             progressBar.style.width = `${progress}%`;
         }
 
-        // 처음 시작할 때 A1 레벨 단어 로드
-        window.onload = loadWords;
+        // 홈으로 가는 함수
+        function goHome() {
+            document.getElementById('gameContainer').style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'block';
+        }
+
+        // Enter 키로 정답 제출
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                checkAnswer();
+            }
+        }
+
+        // 처음 시작할 때 첫 화면 로드
+        window.onload = () => {
+            document.getElementById('mainMenu').style.display = 'block';
+            document.getElementById('gameContainer').style.display = 'none';
+        };
     </script>
 
 </body>
 </html>
-
