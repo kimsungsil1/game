@@ -1,249 +1,119 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>오목 게임 - 최고 난이도 AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>영어 단어 맞추기 게임</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.2/xlsx.full.min.js"></script>
     <style>
         body {
-            text-align: center;
             font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
         }
-
-        canvas {
-            border: 1px solid #000;
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 200px);
+            grid-gap: 10px;
+            justify-content: center;
             margin-top: 20px;
+        }
+        .grid-item {
+            width: 200px;
+            height: 50px;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+        #message {
+            margin-top: 20px;
+            font-size: 18px;
+            color: green;
         }
     </style>
 </head>
 <body>
-    <h1>오목 게임</h1>
-    <canvas id="gameCanvas" width="600" height="600"></canvas>
+
+    <h1>영어 단어 맞추기 게임</h1>
+    <p>레벨을 선택하세요:</p>
+    <select id="levelSelect" onchange="loadWords()">
+        <option value="A1">A1</option>
+        <option value="A2">A2</option>
+        <option value="B1">B1</option>
+    </select>
+
+    <div class="grid-container" id="wordGrid">
+        <!-- 단어들이 여기 표시됩니다 -->
+    </div>
+
     <p id="message"></p>
+
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const boardSize = 15;
-        const cellSize = canvas.width / boardSize;
-        let board = [];
-        let currentPlayer = 'human'; // 'human' 또는 'ai'
-        let gameOver = false;
+        function loadWords() {
+            const level = document.getElementById('levelSelect').value;
+            let fileName;
 
-        // 보드 초기화
-        for (let i = 0; i < boardSize; i++) {
-            board[i] = [];
-            for (let j = 0; j < boardSize; j++) {
-                board[i][j] = null;
+            // 선택한 레벨에 맞는 파일 이름 설정
+            if (level === 'A1') {
+                fileName = 'A1WORD.xlsx';
+            } else if (level === 'A2') {
+                fileName = 'A2WORD.xlsx';
+            } else if (level === 'B1') {
+                fileName = 'B1WORD.xlsx';
             }
+
+            fetch(fileName)
+                .then(response => response.arrayBuffer())
+                .then(data => {
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                    populateWords(jsonData);
+                });
         }
 
-        // 보드 그리기
-        function drawBoard() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = '#000';
+        function populateWords(data) {
+            const wordGrid = document.getElementById('wordGrid');
+            wordGrid.innerHTML = ''; // 기존 내용을 초기화합니다.
 
-            // 격자선 그리기
-            for (let i = 0; i <= boardSize; i++) {
-                ctx.beginPath();
-                ctx.moveTo(i * cellSize, 0);
-                ctx.lineTo(i * cellSize, canvas.height);
-                ctx.stroke();
+            const wordPairs = data.slice(1); // 첫 번째 행은 헤더이므로 제외
 
-                ctx.beginPath();
-                ctx.moveTo(0, i * cellSize);
-                ctx.lineTo(canvas.width, i * cellSize);
-                ctx.stroke();
-            }
+            wordPairs.forEach(pair => {
+                const [englishWord, koreanWord] = pair;
 
-            // 돌 그리기
-            for (let i = 0; i < boardSize; i++) {
-                for (let j = 0; j < boardSize; j++) {
-                    if (board[i][j]) {
-                        ctx.beginPath();
-                        ctx.arc(
-                            i * cellSize + cellSize / 2,
-                            j * cellSize + cellSize / 2,
-                            cellSize / 2 - 2,
-                            0,
-                            2 * Math.PI
-                        );
-                        ctx.fillStyle = board[i][j] === 'human' ? 'black' : 'white';
-                        ctx.fill();
-                    }
-                }
-            }
+                const englishItem = document.createElement('div');
+                englishItem.classList.add('grid-item');
+                englishItem.textContent = englishWord;
+                englishItem.onclick = () => checkAnswer(koreanWord, englishItem);
+                wordGrid.appendChild(englishItem);
+
+                const koreanItem = document.createElement('div');
+                koreanItem.classList.add('grid-item');
+                koreanItem.textContent = koreanWord;
+                wordGrid.appendChild(koreanItem);
+            });
         }
 
-        // 승리 체크
-        function checkWin(x, y, player) {
-            const directions = [
-                { dx: 1, dy: 0 },   // 수평
-                { dx: 0, dy: 1 },   // 수직
-                { dx: 1, dy: 1 },   // 대각선 \
-                { dx: 1, dy: -1 },  // 대각선 /
-            ];
+        function checkAnswer(koreanWord, element) {
+            const messageElement = document.getElementById('message');
 
-            for (const { dx, dy } of directions) {
-                let count = 1;
-                let i = 1;
-                while (
-                    x + i * dx >= 0 &&
-                    x + i * dx < boardSize &&
-                    y + i * dy >= 0 &&
-                    y + i * dy < boardSize &&
-                    board[x + i * dx][y + i * dy] === player
-                ) {
-                    count++;
-                    i++;
-                }
-                i = 1;
-                while (
-                    x - i * dx >= 0 &&
-                    x - i * dx < boardSize &&
-                    y - i * dy >= 0 &&
-                    y - i * dy < boardSize &&
-                    board[x - i * dx][y - i * dy] === player
-                ) {
-                    count++;
-                    i++;
-                }
-                if (count >= 5) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // 보드 평가 함수
-        function evaluateBoard(player) {
-            // 간단한 평가 함수
-            let score = 0;
-            for (let x = 0; x < boardSize; x++) {
-                for (let y = 0; y < boardSize; y++) {
-                    if (board[x][y] === player) {
-                        score += 1;
-                    }
-                }
-            }
-            return score;
-        }
-
-        // Minimax 알고리즘과 알파-베타 가지치기
-        function minimax(depth, alpha, beta, maximizingPlayer) {
-            if (depth === 0 || gameOver) {
-                return evaluateBoard('ai') - evaluateBoard('human');
-            }
-
-            let bestValue;
-            if (maximizingPlayer) {
-                bestValue = -Infinity;
-                for (let x = 0; x < boardSize; x++) {
-                    for (let y = 0; y < boardSize; y++) {
-                        if (!board[x][y]) {
-                            board[x][y] = 'ai';
-                            if (checkWin(x, y, 'ai')) {
-                                board[x][y] = null;
-                                return Infinity;
-                            }
-                            let value = minimax(depth - 1, alpha, beta, false);
-                            board[x][y] = null;
-                            bestValue = Math.max(bestValue, value);
-                            alpha = Math.max(alpha, bestValue);
-                            if (beta <= alpha) {
-                                break;
-                            }
-                        }
-                    }
-                }
-                return bestValue;
+            if (element.textContent === koreanWord) {
+                element.style.backgroundColor = 'lightgreen';
+                messageElement.textContent = "맞았습니다!";
             } else {
-                bestValue = Infinity;
-                for (let x = 0; x < boardSize; x++) {
-                    for (let y = 0; y < boardSize; y++) {
-                        if (!board[x][y]) {
-                            board[x][y] = 'human';
-                            if (checkWin(x, y, 'human')) {
-                                board[x][y] = null;
-                                return -Infinity;
-                            }
-                            let value = minimax(depth - 1, alpha, beta, true);
-                            board[x][y] = null;
-                            bestValue = Math.min(bestValue, value);
-                            beta = Math.min(beta, bestValue);
-                            if (beta <= alpha) {
-                                break;
-                            }
-                        }
-                    }
-                }
-                return bestValue;
+                element.style.backgroundColor = 'lightcoral';
+                messageElement.textContent = "틀렸습니다. 다시 시도하세요.";
             }
         }
 
-        // AI의 수 계산
-        function aiMove() {
-            let bestScore = -Infinity;
-            let move;
-            for (let x = 0; x < boardSize; x++) {
-                for (let y = 0; y < boardSize; y++) {
-                    if (!board[x][y]) {
-                        board[x][y] = 'ai';
-                        if (checkWin(x, y, 'ai')) {
-                            board[x][y] = null;
-                            move = { x, y };
-                            break;
-                        }
-                        let score = minimax(2, -Infinity, Infinity, false); // 깊이를 높이면 난이도 상승
-                        board[x][y] = null;
-                        if (score > bestScore) {
-                            bestScore = score;
-                            move = { x, y };
-                        }
-                    }
-                }
-            }
-
-            if (move) {
-                board[move.x][move.y] = 'ai';
-                drawBoard();
-
-                if (checkWin(move.x, move.y, 'ai')) {
-                    document.getElementById('message').textContent = 'AI의 승리!';
-                    gameOver = true;
-                    return;
-                }
-            }
-
-            currentPlayer = 'human';
-        }
-
-        // 마우스 클릭 이벤트 처리
-        canvas.addEventListener('click', function (e) {
-            if (gameOver || currentPlayer !== 'human') return;
-
-            const rect = canvas.getBoundingClientRect();
-            const x = Math.floor((e.clientX - rect.left) / cellSize);
-            const y = Math.floor((e.clientY - rect.top) / cellSize);
-
-            if (board[x][y]) {
-                return; // 이미 놓인 자리
-            }
-
-            board[x][y] = 'human';
-            drawBoard();
-
-            if (checkWin(x, y, 'human')) {
-                document.getElementById('message').textContent = '당신의 승리!';
-                gameOver = true;
-                return;
-            }
-
-            currentPlayer = 'ai';
-
-            // AI의 수를 둠
-            setTimeout(aiMove, 500); // 생각하는 시간 표현
-        });
-
-        drawBoard();
+        // 처음 시작할 때 A1 레벨 단어 로드
+        window.onload = loadWords;
     </script>
+
 </body>
 </html>
