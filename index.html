@@ -191,7 +191,12 @@
             }
 
             fetch(fileName)
-                .then(response => response.arrayBuffer())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('파일을 불러오지 못했습니다.');
+                    }
+                    return response.arrayBuffer();
+                })
                 .then(data => {
                     const workbook = XLSX.read(data, { type: 'array' });
                     const sheetName = workbook.SheetNames[0];
@@ -204,6 +209,11 @@
                     document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
                     updateProgressBar();
                     displayNextWord();
+                })
+                .catch(error => {
+                    alert('단어 파일을 불러오는 중 오류가 발생했습니다: ' + error.message);
+                    document.getElementById('mainMenu').style.display = 'block';
+                    document.getElementById('gameContainer').style.display = 'none';
                 });
         }
 
@@ -235,7 +245,8 @@
                 setTimeout(() => {
                     displayNextWord();
                     updateProgressBar();
-                }, 1000); // 1초 후 다음 단어로 넘어감
+                }, 100
+0); // 1초 후 다음 단어로 넘어감
             } else if (!correctAnswerGiven) {
                 // 처음 오답을 입력했을 때, 정답을 알려주고 다시 입력하게 함
                 document.getElementById('message').textContent = `오답입니다. 정답은 '${englishWord}' 입니다. 다시 입력하세요.`;
@@ -243,8 +254,7 @@
                 correctAnswerGiven = true; // 정답이 한 번 표시되면 다시 정답을 입력할 수 있도록 설정
             } else if (correctAnswerGiven && userAnswer === englishWord.toLowerCase()) {
                 // 정답을 보고 정확히 입력했을 때
-                document.getElementById('message').textContent = "
-정확하게 입력하셨습니다!";
+                document.getElementById('message').textContent = "정확하게 입력하셨습니다!";
                 document.getElementById('message').style.color = "#2ecc71"; // 정답일 때 초록색
                 currentWordIndex++;
                 score += 5; // 정답 입력 시 점수를 조금 더 추가
