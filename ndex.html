@@ -1,145 +1,145 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speed Card Memory Game</title>
+    <title>Gomoku Game</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
             text-align: center;
-            margin: 20px;
+            font-family: Arial, sans-serif;
         }
-        #game-area {
-            margin: 20px;
-        }
-        .card {
-            display: inline-block;
-            width: 50px;
-            height: 70px;
+
+        canvas {
             border: 1px solid #000;
-            margin: 5px;
-            background-color: #f0f0f0;
-            line-height: 70px;
-            vertical-align: middle;
-            font-size: 20px;
-            cursor: pointer;
-        }
-        .red {
-            color: red;
-        }
-        .hidden {
-            visibility: hidden;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>Speed Card Memory Game</h1>
-    <button id="start-button">Start</button>
-    <button id="stop-button" disabled>Stop</button>
-    <div id="timer">Time: 0 seconds</div>
-    <div id="game-area"></div>
-    <div id="card-selection"></div>
+    <h1>Gomoku Game</h1>
+    <canvas id="gameCanvas" width="600" height="600"></canvas>
+    <p id="message"></p>
     <script>
-        let startTime;
-        let timerInterval;
-        let shuffledDeck = [];
-        let currentCardIndex = 0;
-        const gameArea = document.getElementById('game-area');
-        const cardSelection = document.getElementById('card-selection');
-        const startButton = document.getElementById('start-button');
-        const stopButton = document.getElementById('stop-button');
-        const timer = document.getElementById('timer');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const boardSize = 15;
+        const cellSize = canvas.width / boardSize;
+        let board = [];
+        let currentPlayer = 'black';
+        let gameOver = false;
 
-        function createDeck() {
-            const suits = ['♠', '♥', '♦', '♣'];
-            const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-            let deck = [];
-            for (let suit of suits) {
-                for (let value of values) {
-                    deck.push({ value: `${value}${suit}`, suit: suit });
-                }
+        // Initialize board
+        for (let i = 0; i < boardSize; i++) {
+            board[i] = [];
+            for (let j = 0; j < boardSize; j++) {
+                board[i][j] = null;
             }
-            return deck;
         }
 
-        function shuffleDeck(deck) {
-            for (let i = deck.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [deck[i], deck[j]] = [deck[j], deck[i]];
+        // Draw the board
+        function drawBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#000';
+
+            // Draw grid lines
+            for (let i = 0; i <= boardSize; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cellSize, 0);
+                ctx.lineTo(i * cellSize, canvas.height);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(0, i * cellSize);
+                ctx.lineTo(canvas.width, i * cellSize);
+                ctx.stroke();
             }
-            return deck;
-        }
 
-        function startTimer() {
-            startTime = Date.now();
-            timerInterval = setInterval(() => {
-                const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-                timer.textContent = `Time: ${elapsedTime} seconds`;
-            }, 1000);
-        }
-
-        function stopTimer() {
-            clearInterval(timerInterval);
-        }
-
-        function createCardElement(card, hidden = false) {
-            const cardElement = document.createElement('div');
-            cardElement.className = 'card';
-            cardElement.textContent = hidden ? '?' : card.value;
-            cardElement.style.color = hidden ? 'black' : (card.suit === '♥' || card.suit === '♦') ? 'red' : 'black';
-            return cardElement;
-        }
-
-        function startGame() {
-            if (timerInterval) stopTimer();
-
-            shuffledDeck = shuffleDeck(createDeck());
-            gameArea.innerHTML = '';
-            cardSelection.innerHTML = '';
-            cardSelection.style.display = 'none';
-            startButton.disabled = true;
-            stopButton.disabled = false;
-            timer.textContent = 'Time: 0 seconds';
-            currentCardIndex = 0;
-            startTimer();
-
-            shuffledDeck.forEach((card, index) => {
-                const cardElement = createCardElement(card);
-                cardElement.dataset.index = index;
-                gameArea.appendChild(cardElement);
-            });
-
-            const deck = createDeck();
-            deck.forEach((card, index) => {
-                const cardElement = createCardElement(card);
-                cardElement.addEventListener('click', () => selectCard(card.value));
-                cardSelection.appendChild(cardElement);
-
-                if ((index + 1) % 13 === 0) {
-                    const breakElement = document.createElement('br');
-                    cardSelection.appendChild(breakElement);
-                }
-            });
-        }
-
-        function selectCard(cardValue) {
-            const correctCard = shuffledDeck[currentCardIndex].value;
-
-            if (cardValue === correctCard) {
-                const cardElements = gameArea.children;
-                cardElements[currentCardIndex].classList.add('hidden');
-                currentCardIndex++;
-
-                if (currentCardIndex === shuffledDeck.length) {
-                    stopTimer();
-                    alert('Congratulations! You matched all cards.');
+            // Draw stones
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    if (board[i][j]) {
+                        ctx.beginPath();
+                        ctx.arc(
+                            i * cellSize + cellSize / 2,
+                            j * cellSize + cellSize / 2,
+                            cellSize / 2 - 2,
+                            0,
+                            2 * Math.PI
+                        );
+                        ctx.fillStyle = board[i][j];
+                        ctx.fill();
+                    }
                 }
             }
         }
 
-        startButton.addEventListener('click', startGame);
-        stopButton.addEventListener('click', stopTimer);
+        // Check for a win
+        function checkWin(x, y) {
+            const directions = [
+                { dx: 1, dy: 0 },   // Horizontal
+                { dx: 0, dy: 1 },   // Vertical
+                { dx: 1, dy: 1 },   // Diagonal \
+                { dx: 1, dy: -1 },  // Diagonal /
+            ];
+            const color = board[x][y];
+
+            for (const { dx, dy } of directions) {
+                let count = 1;
+                let i = 1;
+                while (
+                    x + i * dx >= 0 &&
+                    x + i * dx < boardSize &&
+                    y + i * dy >= 0 &&
+                    y + i * dy < boardSize &&
+                    board[x + i * dx][y + i * dy] === color
+                ) {
+                    count++;
+                    i++;
+                }
+                i = 1;
+                while (
+                    x - i * dx >= 0 &&
+                    x - i * dx < boardSize &&
+                    y - i * dy >= 0 &&
+                    y - i * dy < boardSize &&
+                    board[x - i * dx][y - i * dy] === color
+                ) {
+                    count++;
+                    i++;
+                }
+                if (count >= 5) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Handle mouse click
+        canvas.addEventListener('click', function (e) {
+            if (gameOver) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left) / cellSize);
+            const y = Math.floor((e.clientY - rect.top) / cellSize);
+
+            if (board[x][y]) {
+                return; // Cell is already occupied
+            }
+
+            board[x][y] = currentPlayer;
+            drawBoard();
+
+            if (checkWin(x, y)) {
+                document.getElementById('message').textContent = currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1) + ' wins!';
+                gameOver = true;
+                return;
+            }
+
+            // Switch player
+            currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+        });
+
+        drawBoard();
     </script>
 </body>
 </html>
