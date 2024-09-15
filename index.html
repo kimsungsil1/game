@@ -31,14 +31,11 @@
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
         }
 
-        select {
-            padding: 12px;
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
             font-size: 1.2em;
             margin-bottom: 20px;
-            border: 2px solid #3498db;
-            border-radius: 5px;
-            outline: none;
-            width: 80%;
         }
 
         .word-container {
@@ -165,6 +162,11 @@
     </div>
 
     <div class="container" id="gameContainer" style="display:none;">
+        <div class="status-bar">
+            <div id="scoreDisplay">점수: 0</div>
+            <div id="timerDisplay">남은 시간: 30초</div>
+        </div>
+
         <div class="word-container">
             <div class="word-item" id="koreanWord">여기에 한글 단어가 표시됩니다</div>
             <input type="text" id="englishInput" placeholder="영어 단어를 입력하세요" onkeypress="handleKeyPress(event)">
@@ -190,9 +192,12 @@
     <script>
         let correctWords = [];
         let currentWordIndex = 0;
+        let score = 0;
         let hintGiven = false;
+        let timeLimit = 30;
+        let timer;
 
-        // 게임 시작 함수 (시작 버튼을 클릭한 후 실행)
+        // 게임 시작 함수
         function startGame() {
             const level = document.getElementById('levelSelect').value;
             if (level) {
@@ -202,6 +207,22 @@
             } else {
                 alert("레벨을 선택해주세요!");
             }
+        }
+
+        function startTimer() {
+            clearInterval(timer);
+            let timeLeft = timeLimit;
+            document.getElementById('timerDisplay').textContent = `남은 시간: ${timeLeft}초`;
+
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timerDisplay').textContent = `남은 시간: ${timeLeft}초`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    skipWord();
+                }
+            }, 1000);
         }
 
         // 배열을 랜덤하게 섞는 함수
@@ -233,8 +254,10 @@
                     const sheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
                     correctWords = shuffleArray(jsonData.slice(1)); // 첫 번째 행은 헤더이므로 제외하고 섞음
-                    currentWordIndex = 0; // 처음부터 시작
-                    hintGiven = false; // 힌트 초기화
+                    currentWordIndex = 0;
+                    hintGiven = false;
+                    score = 0;
+                    document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
                     updateProgressBar();
                     displayNextWord();
                 });
@@ -242,13 +265,16 @@
 
         function displayNextWord() {
             if (currentWordIndex < correctWords.length) {
-                const [englishWord, koreanWord] = correctWords[currentWordIndex];
+                const [englishWord, koreanWord
+                ] = correctWords[currentWordIndex];
                 document.getElementById('koreanWord').textContent = koreanWord;
                 document.getElementById('englishInput').value = '';
                 document.getElementById('message').textContent = '';
                 document.getElementById('englishInput').focus();
                 hintGiven = false; // 새로운 문제로 넘어갈 때 힌트 리셋
+                startTimer(); // 다음 문제로 넘어갈 때 타이머 시작
             } else {
+                clearInterval(timer); // 모든 단어를 맞추면 타이머 종료
                 document.getElementById('koreanWord').textContent = '축하합니다! 모든 단어를 맞추셨습니다!';
                 document.getElementById('englishInput').style.display = 'none';
                 document.querySelector('.next-btn').style.display = 'none';
@@ -263,8 +289,9 @@
 
             if (userAnswer === englishWord.toLowerCase()) {
                 document.getElementById('message').textContent = "정답입니다!";
-                document.getElementById('message').style.color = "#2ecc71"; // 정답일 때 초록
                 document.getElementById('message').style.color = "#2ecc71"; // 정답일 때 초록색
+                score += 10; // 정답 맞추면 10점 추가
+                document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
                 currentWordIndex++;
                 setTimeout(() => {
                     displayNextWord();
@@ -288,6 +315,8 @@
                 const hint = englishWord.slice(0, Math.ceil(englishWord.length / 2)) + "..."; // 단어의 절반을 힌트로 제공
                 document.getElementById('message').textContent = `힌트: ${hint}`;
                 document.getElementById('message').style.color = "#f39c12"; // 힌트 색상
+                score -= 5; // 힌트를 사용하면 5점 차감
+                document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
                 hintGiven = true; // 힌트 제공 후 다시 제공되지 않도록 설정
             } else {
                 document.getElementById('message').textContent = "이미 힌트를 보셨습니다!";
@@ -305,6 +334,7 @@
         function goHome() {
             document.getElementById('gameContainer').style.display = 'none';
             document.getElementById('mainMenu').style.display = 'block';
+            clearInterval(timer); // 홈으로 돌아가면 타이머 정지
         }
 
         // Enter 키로 정답 제출
