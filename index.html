@@ -11,23 +11,15 @@
             text-align: center;
             margin: 20px;
         }
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(2, 200px);
-            grid-gap: 10px;
-            justify-content: center;
+        .word-container {
             margin-top: 20px;
         }
-        .grid-item {
-            width: 200px;
-            height: 50px;
-            background-color: #f0f0f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            border: 1px solid #ccc;
-            cursor: pointer;
+        .word-item {
+            margin: 10px 0;
+        }
+        input {
+            padding: 8px;
+            font-size: 16px;
         }
         #message {
             margin-top: 20px;
@@ -46,13 +38,17 @@
         <option value="B1">B1</option>
     </select>
 
-    <div class="grid-container" id="wordGrid">
-        <!-- 단어들이 여기 표시됩니다 -->
+    <div id="wordContainer" class="word-container">
+        <!-- 한글 단어와 입력창이 여기에 표시됩니다 -->
     </div>
 
     <p id="message"></p>
 
+    <button onclick="checkAnswers()">제출</button>
+
     <script>
+        let correctWords = [];
+
         function loadWords() {
             const level = document.getElementById('levelSelect').value;
             let fileName;
@@ -73,41 +69,48 @@
                     const sheetName = workbook.SheetNames[0];
                     const sheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                    populateWords(jsonData);
+                    displayWords(jsonData);
                 });
         }
 
-        function populateWords(data) {
-            const wordGrid = document.getElementById('wordGrid');
-            wordGrid.innerHTML = ''; // 기존 내용을 초기화합니다.
+        function displayWords(data) {
+            const wordContainer = document.getElementById('wordContainer');
+            wordContainer.innerHTML = ''; // 기존 내용을 초기화합니다.
 
-            const wordPairs = data.slice(1); // 첫 번째 행은 헤더이므로 제외
+            correctWords = data.slice(1); // 첫 번째 행은 헤더이므로 제외
 
-            wordPairs.forEach(pair => {
+            correctWords.forEach((pair, index) => {
                 const [englishWord, koreanWord] = pair;
 
-                const englishItem = document.createElement('div');
-                englishItem.classList.add('grid-item');
-                englishItem.textContent = englishWord;
-                englishItem.onclick = () => checkAnswer(koreanWord, englishItem);
-                wordGrid.appendChild(englishItem);
-
-                const koreanItem = document.createElement('div');
-                koreanItem.classList.add('grid-item');
-                koreanItem.textContent = koreanWord;
-                wordGrid.appendChild(koreanItem);
+                // 한글 단어와 입력란을 생성
+                const wordItem = document.createElement('div');
+                wordItem.classList.add('word-item');
+                wordItem.innerHTML = `
+                    <label for="input${index}">${koreanWord}</label>
+                    <input type="text" id="input${index}" placeholder="영어 단어를 입력하세요">
+                `;
+                wordContainer.appendChild(wordItem);
             });
         }
 
-        function checkAnswer(koreanWord, element) {
-            const messageElement = document.getElementById('message');
+        function checkAnswers() {
+            let correctCount = 0;
+            correctWords.forEach((pair, index) => {
+                const [englishWord, koreanWord] = pair;
+                const userAnswer = document.getElementById(`input${index}`).value.trim().toLowerCase();
+                if (userAnswer === englishWord.toLowerCase()) {
+                    correctCount++;
+                    document.getElementById(`input${index}`).style.backgroundColor = 'lightgreen';
+                } else {
+                    document.getElementById(`input${index}`).style.backgroundColor = 'lightcoral';
+                }
+            });
 
-            if (element.textContent === koreanWord) {
-                element.style.backgroundColor = 'lightgreen';
-                messageElement.textContent = "맞았습니다!";
+            const messageElement = document.getElementById('message');
+            if (correctCount === correctWords.length) {
+                messageElement.textContent = "축하합니다! 모든 단어를 맞췄습니다!";
             } else {
-                element.style.backgroundColor = 'lightcoral';
-                messageElement.textContent = "틀렸습니다. 다시 시도하세요.";
+                messageElement.textContent = `총 ${correctWords.length}개 중 ${correctCount}개를 맞췄습니다.`;
             }
         }
 
