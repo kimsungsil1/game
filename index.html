@@ -6,48 +6,66 @@
     <title>영어 단어 맞추기 게임</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.2/xlsx.full.min.js"></script>
     <style>
+        /* 세련된 디자인: 미니멀리즘 스타일 */
         body {
             font-family: 'Arial', sans-serif;
-            background-color: #f0f4f8;
-            color: #333;
+            background-color: #fdfdfd;
+            color: #2c3e50;
             text-align: center;
             padding: 20px;
             margin: 0;
+            line-height: 1.6;
         }
+
         h1 {
-            font-size: 2.2em;
-            color: #2c3e50;
+            font-size: 2.4em;
             margin-bottom: 20px;
         }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
         select {
-            padding: 10px;
+            padding: 12px;
             font-size: 1.2em;
             margin-bottom: 20px;
             border: 2px solid #3498db;
             border-radius: 5px;
             outline: none;
+            width: 80%;
         }
+
         .word-container {
             margin-top: 20px;
         }
+
         .word-item {
-            font-size: 1.6em;
-            color: #2980b9;
+            font-size: 1.8em;
             margin-bottom: 20px;
+            color: #34495e;
         }
+
         input {
             padding: 15px;
             font-size: 1.2em;
-            width: 90%;
+            width: 80%;
             max-width: 500px;
             border: 2px solid #3498db;
             border-radius: 5px;
             outline: none;
             margin-bottom: 20px;
         }
+
         input:focus {
             border-color: #2ecc71;
         }
+
         button {
             padding: 15px;
             font-size: 1.2em;
@@ -58,90 +76,98 @@
             cursor: pointer;
             margin: 10px;
             width: 45%;
-            max-width: 250px;
         }
+
         button:hover {
             background-color: #2980b9;
         }
+
         #message {
             margin-top: 20px;
             font-size: 1.2em;
             color: #e74c3c;
         }
+
         .next-btn {
             background-color: #95a5a6;
         }
+
         .next-btn:hover {
             background-color: #7f8c8d;
         }
+
+        .hint-btn {
+            background-color: #f39c12;
+        }
+
+        .hint-btn:hover {
+            background-color: #e67e22;
+        }
+
+        /* 프로그레스 바 */
+        .progress-bar {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 25px;
+            margin-top: 20px;
+            height: 20px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0;
+            background-color: #3498db;
+            border-radius: 25px;
+            transition: width 0.5s ease-in-out;
+        }
+
         /* 반응형 디자인 */
         @media (max-width: 768px) {
             h1 {
                 font-size: 1.8em;
             }
-            select {
-                padding: 8px;
-                font-size: 1em;
-            }
-            input {
-                padding: 12px;
-                font-size: 1em;
-            }
-            button {
-                padding: 12px;
-                font-size: 1em;
+            select, input {
                 width: 90%;
             }
-            .word-item {
-                font-size: 1.4em;
-            }
-        }
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 1.5em;
-            }
-            select {
-                padding: 6px;
-                font-size: 0.9em;
-            }
-            input {
-                padding: 10px;
-                font-size: 0.9em;
-            }
             button {
-                padding: 10px;
-                font-size: 0.9em;
                 width: 90%;
-            }
-            .word-item {
-                font-size: 1.2em;
             }
         }
     </style>
 </head>
 <body>
 
-    <h1>영어 단어 맞추기 게임</h1>
-    <p>레벨을 선택하세요:</p>
-    <select id="levelSelect" onchange="loadWords()">
-        <option value="A1">A1</option>
-        <option value="A2">A2</option>
-        <option value="B1">B1</option>
-    </select>
+    <div class="container">
+        <h1>영어 단어 맞추기 게임</h1>
 
-    <div id="wordContainer" class="word-container">
-        <div class="word-item" id="koreanWord">여기에 한글 단어가 표시됩니다</div>
-        <input type="text" id="englishInput" placeholder="영어 단어를 입력하세요">
+        <p>레벨을 선택하세요:</p>
+        <select id="levelSelect" onchange="loadWords()">
+            <option value="A1">A1</option>
+            <option value="A2">A2</option>
+            <option value="B1">B1</option>
+        </select>
+
+        <div class="word-container">
+            <div class="word-item" id="koreanWord">여기에 한글 단어가 표시됩니다</div>
+            <input type="text" id="englishInput" placeholder="영어 단어를 입력하세요">
+        </div>
+
+        <button onclick="checkAnswer()">제출</button>
+        <button class="next-btn" onclick="skipWord()">다음으로 넘기기</button>
+        <button class="hint-btn" onclick="showHint()">힌트 보기</button>
+
+        <!-- 프로그레스 바 -->
+        <div class="progress-bar">
+            <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+
+        <p id="message"></p>
     </div>
-
-    <p id="message"></p>
-
-    <button onclick="checkAnswer()">제출</button>
-    <button class="next-btn" onclick="skipWord()">다음으로 넘기기</button>
 
     <script>
         let correctWords = [];
         let currentWordIndex = 0;
+        let hintGiven = false;
 
         // 배열을 랜덤하게 섞는 함수
         function shuffleArray(array) {
@@ -174,6 +200,8 @@
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
                     correctWords = shuffleArray(jsonData.slice(1)); // 첫 번째 행은 헤더이므로 제외하고 섞음
                     currentWordIndex = 0; // 처음부터 시작
+                    hintGiven = false; // 힌트 초기화
+                    updateProgressBar();
                     displayNextWord();
                 });
         }
@@ -181,14 +209,15 @@
         function displayNextWord() {
             if (currentWordIndex < correctWords.length) {
                 const [englishWord, koreanWord] = correctWords[currentWordIndex];
-                document.getElementById('koreanWord').textContent = koreanWord;
-                document.getElementById('englishInput').value = '';
+                document.getElementById('koreanWord').textContent = koreanWord;                document.getElementById('englishInput').value = '';
                 document.getElementById('message').textContent = '';
                 document.getElementById('englishInput').focus();
+                hintGiven = false; // 새로운 문제로 넘어갈 때 힌트 리셋
             } else {
                 document.getElementById('koreanWord').textContent = '축하합니다! 모든 단어를 맞추셨습니다!';
                 document.getElementById('englishInput').style.display = 'none';
-                document.querySelector('button.next-btn').style.display = 'none';
+                document.querySelector('.next-btn').style.display = 'none';
+                document.querySelector('.hint-btn').style.display = 'none';
                 document.querySelector('button').style.display = 'none';
             }
         }
@@ -196,20 +225,44 @@
         function checkAnswer() {
             const [englishWord, koreanWord] = correctWords[currentWordIndex];
             const userAnswer = document.getElementById('englishInput').value.trim().toLowerCase();
+
             if (userAnswer === englishWord.toLowerCase()) {
                 document.getElementById('message').textContent = "정답입니다!";
-                document.getElementById('message').style.color = "#2ecc71"; // 정답일 때는 초록색
+                document.getElementById('message').style.color = "#2ecc71"; // 정답일 때 초록색
                 currentWordIndex++;
-                setTimeout(displayNextWord, 1000); // 1초 후 다음 단어 표시
+                setTimeout(() => {
+                    displayNextWord();
+                    updateProgressBar();
+                }, 1000); // 1초 후 다음 단어 표시
             } else {
                 document.getElementById('message').textContent = "틀렸습니다. 다시 시도해 보세요.";
-                document.getElementById('message').style.color = "#e74c3c"; // 틀렸을 때는 빨간색
+                document.getElementById('message').style.color = "#e74c3c"; // 틀렸을 때 빨간색
             }
         }
 
         function skipWord() {
             currentWordIndex++;
+            updateProgressBar();
             displayNextWord();
+        }
+
+        function showHint() {
+            if (!hintGiven) {
+                const [englishWord] = correctWords[currentWordIndex];
+                const hint = englishWord.slice(0, Math.ceil(englishWord.length / 2)) + "..."; // 단어의 절반을 힌트로 제공
+                document.getElementById('message').textContent = `힌트: ${hint}`;
+                document.getElementById('message').style.color = "#f39c12"; // 힌트 색상
+                hintGiven = true; // 힌트 제공 후 다시 제공되지 않도록 설정
+            } else {
+                document.getElementById('message').textContent = "이미 힌트를 보셨습니다!";
+            }
+        }
+
+        // 프로그레스 바 업데이트 함수
+        function updateProgressBar() {
+            const progressBar = document.getElementById('progressBar');
+            const progress = ((currentWordIndex / correctWords.length) * 100).toFixed(2);
+            progressBar.style.width = `${progress}%`;
         }
 
         // 처음 시작할 때 A1 레벨 단어 로드
@@ -218,3 +271,4 @@
 
 </body>
 </html>
+
