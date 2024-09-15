@@ -19,7 +19,6 @@
             font-size: 2.5em;
             color: #2980b9;
             margin-bottom: 20px;
-            animation: fadeInDown 1s ease;
         }
 
         .container {
@@ -29,7 +28,6 @@
             background-color: #fff;
             border-radius: 12px;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-            animation: fadeIn 1s ease;
         }
 
         select {
@@ -40,12 +38,10 @@
             border-radius: 6px;
             outline: none;
             width: 80%;
-            transition: all 0.3s ease;
         }
 
         .word-container {
             margin-top: 20px;
-            animation: fadeInUp 1s ease;
         }
 
         .word-item {
@@ -63,11 +59,6 @@
             border-radius: 6px;
             outline: none;
             margin-bottom: 20px;
-            transition: border-color 0.3s ease;
-        }
-
-        input:focus {
-            border-color: #2ecc71;
         }
 
         button {
@@ -80,44 +71,15 @@
             cursor: pointer;
             margin: 10px;
             width: 45%;
-            transition: background-color 0.3s ease, transform 0.1s ease;
         }
 
         button:hover {
             background-color: #2980b9;
         }
 
-        button:active {
-            transform: scale(0.98);
-        }
-
         #message {
             margin-top: 20px;
             font-size: 1.2em;
-        }
-
-        .next-btn {
-            background-color: #95a5a6;
-        }
-
-        .next-btn:hover {
-            background-color: #7f8c8d;
-        }
-
-        .hint-btn {
-            background-color: #f39c12;
-        }
-
-        .hint-btn:hover {
-            background-color: #e67e22;
-        }
-
-        .home-btn {
-            background-color: #27ae60;
-        }
-
-        .home-btn:hover {
-            background-color: #2ecc71;
         }
 
         .progress-bar {
@@ -135,37 +97,6 @@
             background-color: #3498db;
             border-radius: 25px;
             transition: width 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         footer {
@@ -203,21 +134,12 @@
 
         <button onclick="checkAnswer()">제출</button>
         <button class="next-btn" onclick="skipWord()">다음으로 넘기기</button>
-        <button class="hint-btn" onclick="showHint()">힌트 보기</button>
-        <button class="home-btn" onclick="goHome()">홈으로</button>
 
         <div class="progress-bar">
             <div class="progress-bar-fill" id="progressBar"></div>
         </div>
 
         <p id="message"></p>
-    </div>
-
-    <div class="container" id="reviewContainer" style="display:none;">
-        <h2>복습 모드</h2>
-        <p>아래 단어들을 복습하세요:</p>
-        <div id="reviewWords"></div>
-        <button class="home-btn" onclick="goHome()">홈으로</button>
     </div>
 
     <footer>
@@ -228,10 +150,7 @@
         let correctWords = [];
         let currentWordIndex = 0;
         let score = 0;
-        let hintGiven = false;
-        let timeLimit = 30;
-        let timer;
-        let incorrectWords = [];
+        let correctAnswerGiven = false; // 정답을 입력했는지 여부
 
         function startGame() {
             const level = document.getElementById('levelSelect').value;
@@ -244,35 +163,10 @@
             }
         }
 
-        function startTimer() {
-            clearInterval(timer);
-            let timeLeft = timeLimit;
-            document.getElementById('timerDisplay').textContent = `남은 시간: ${timeLeft}초`;
-
-            timer = setInterval(() => {
-                timeLeft--;
-                document.getElementById('timerDisplay').textContent = `남은 시간: ${timeLeft}초`;
-
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    skipWord();
-                }
-            }, 1000);
-        }
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-
         function loadWords(level) {
             let fileName;
 
-            if (level ===
-                'A1') {
+            if (level === 'A1') {
                 fileName = 'A1WORD.xlsx';
             } else if (level === 'A2') {
                 fileName = 'A2WORD.xlsx';
@@ -287,11 +181,10 @@
                     const sheetName = workbook.SheetNames[0];
                     const sheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                    correctWords = shuffleArray(jsonData.slice(1)); // 첫 번째 행은 헤더이므로 제외하고 섞음
+                    correctWords = jsonData.slice(1); // 첫 번째 행은 헤더이므로 제외
                     currentWordIndex = 0;
-                    hintGiven = false;
                     score = 0;
-                    incorrectWords = [];
+                    correctAnswerGiven = false;
                     document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
                     updateProgressBar();
                     displayNextWord();
@@ -305,24 +198,16 @@
                 document.getElementById('englishInput').value = '';
                 document.getElementById('message').textContent = '';
                 document.getElementById('englishInput').focus();
-                hintGiven = false;
-                startTimer(); // 타이머 시작
+                correctAnswerGiven = false; // 새로운 문제로 넘어갈 때 정답 여부 리셋
             } else {
-                clearInterval(timer); // 모든 단어를 맞추면 타이머 종료
                 document.getElementById('koreanWord').textContent = '축하합니다! 모든 단어를 맞추셨습니다!';
                 document.getElementById('englishInput').style.display = 'none';
-                document.querySelector('.next-btn').style.display = 'none';
-                document.querySelector('.hint-btn').style.display = 'none';
                 document.querySelector('button').style.display = 'none';
-
-                if (incorrectWords.length > 0) {
-                    setTimeout(showReviewMode, 2000); // 복습 모드로 전환
-                }
             }
         }
 
         function checkAnswer() {
-            const [englishWord, koreanWord] = correctWords[currentWordIndex];
+            const [englishWord] = correctWords[currentWordIndex];
             const userAnswer = document.getElementById('englishInput').value.trim().toLowerCase();
 
             if (userAnswer === englishWord.toLowerCase()) {
@@ -334,61 +219,39 @@
                 setTimeout(() => {
                     displayNextWord();
                     updateProgressBar();
-                }, 1000); // 1초 후 다음 단어 표시
-            } else {
-                document.getElementById('message').textContent = `틀렸습니다. 정답은 '${englishWord}' 입니다.`;
-                document.getElementById('message').style.color = "#e74c3c"; // 틀렸을 때 빨간색
-                incorrectWords.push([englishWord, koreanWord]); // 틀린 단어 저장
+                }, 1000); // 1초 후 다음 단어로 넘어감
+            } else if (!correctAnswerGiven) {
+                // 처음 오답을 입력했을 때, 정답을 알려주고 다시 입력하게 함
+                document.getElementById('message').textContent = `오답입니다. 정답은 '${englishWord}' 입니다. 다시 입력하세요.`;
+                document.getElementById('message').style.color = "#e74c3c"; // 오답일 때 빨간색
+                correctAnswerGiven =
+                true; // 정답이 한 번 표시되면 다시 정답을 입력할 수 있도록 설정
+            } else if (correctAnswerGiven && userAnswer === englishWord.toLowerCase()) {
+                // 정답을 보고 정확히 입력했을 때
+                document.getElementById('message').textContent = "정확하게 입력하셨습니다!";
+                document.getElementById('message').style.color = "#2ecc71"; // 정답일 때 초록색
                 currentWordIndex++;
+                score += 5; // 정답 입력 시 점수를 조금 더 추가
+                document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
                 setTimeout(() => {
                     displayNextWord();
                     updateProgressBar();
-                }, 3000); // 3초 후 다음 단어 표시
+                }, 1000); // 1초 후 다음 단어로 넘어감
+            } else {
+                document.getElementById('message').textContent = "정확하게 입력하세요!";
+                document.getElementById('message').style.color = "#e74c3c"; // 틀렸을 때 빨간색
             }
         }
 
         function skipWord() {
             const [englishWord] = correctWords[currentWordIndex];
-            document.getElementById('message').textContent = `정답은 '${englishWord}' 입니다.`;
-            document.getElementById('message').style.color = "#e74c3c"; // 정답 표시
-            incorrectWords.push([englishWord, correctWords[currentWordIndex][1]]); // 틀린 단어 저장
+            document.getElementById('message').textContent = `정답은 '${englishWord}' 입니다. 다음 문제로 넘어갑니다.`;
+            document.getElementById('message').style.color = "#e74c3c"; // 틀렸을 때 빨간색
             currentWordIndex++;
             setTimeout(() => {
-                updateProgressBar();
                 displayNextWord();
-            }, 3000); // 3초 후 다음 문제로 넘어감
-        }
-
-        function showHint() {
-            if (!hintGiven) {
-                const [englishWord] = correctWords[currentWordIndex];
-                const hint = englishWord.slice(0, Math.ceil(englishWord.length / 2)) + "..."; // 단어의 절반을 힌트로 제공
-                document.getElementById('message').textContent = `힌트: ${hint}`;
-                document.getElementById('message').style.color = "#f39c12"; // 힌트 색상
-                score -= 5; // 힌트를 사용하면 5점 차감
-                document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
-                hintGiven = true; // 힌트 제공 후 다시 제공되지 않도록 설정
-            } else {
-                document.getElementById('message').textContent = "이미 힌트를 보셨습니다!";
-            }
-        }
-
-        // 복습 모드로 전환하는 함수
-        function showReviewMode() {
-            document.getElementById('gameContainer').style.display = 'none';
-            document.getElementById('reviewContainer').style.display = 'block';
-            const reviewWordsContainer = document.getElementById('reviewWords');
-            reviewWordsContainer.innerHTML = '';
-
-            if (incorrectWords.length > 0) {
-                incorrectWords.forEach(([englishWord, koreanWord]) => {
-                    const wordItem = document.createElement('p');
-                    wordItem.textContent = `${koreanWord} - ${englishWord}`;
-                    reviewWordsContainer.appendChild(wordItem);
-                });
-            } else {
-                reviewWordsContainer.textContent = '틀린 단어가 없습니다!';
-            }
+                updateProgressBar();
+            }, 2000); // 2초 후 다음 문제로 넘어감
         }
 
         // 프로그레스 바 업데이트 함수
@@ -396,14 +259,6 @@
             const progressBar = document.getElementById('progressBar');
             const progress = ((currentWordIndex / correctWords.length) * 100).toFixed(2);
             progressBar.style.width = `${progress}%`;
-        }
-
-        // 홈으로 가는 함수
-        function goHome() {
-            document.getElementById('gameContainer').style.display = 'none';
-            document.getElementById('reviewContainer').style.display = 'none';
-            document.getElementById('mainMenu').style.display = 'block';
-            clearInterval(timer); // 홈으로 돌아가면 타이머 정지
         }
 
         // Enter 키로 정답 제출
@@ -417,7 +272,6 @@
         window.onload = () => {
             document.getElementById('mainMenu').style.display = 'block';
             document.getElementById('gameContainer').style.display = 'none';
-            document.getElementById('reviewContainer').style.display = 'none';
         };
     </script>
 
