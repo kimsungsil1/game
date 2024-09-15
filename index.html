@@ -27,23 +27,18 @@
         }
 
         h1 {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             font-weight: bold;
             color: #3498db;
             margin-bottom: 20px;
             text-align: center;
         }
 
-        h2 {
-            font-size: 1.8rem;
-            color: #2c3e50;
-            margin-bottom: 15px;
-        }
-
         p {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             margin-bottom: 15px;
-            line-height: 1.6;
+            line-height: 1.4;
+            text-align: center;
         }
 
         .container {
@@ -59,25 +54,9 @@
             align-items: center;
         }
 
-        .feature-section, .learning-effect {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        ul {
-            list-style: none;
-            padding-left: 0;
-            margin-bottom: 20px;
-        }
-
-        ul li {
-            font-size: 1.1rem;
-            margin-bottom: 10px;
-        }
-
         select, input {
             padding: 15px;
-            font-size: 1.2em;
+            font-size: 1rem;
             margin-bottom: 20px;
             border: 2px solid #3498db;
             border-radius: 8px;
@@ -86,14 +65,9 @@
             transition: all 0.3s ease;
         }
 
-        input:focus, select:focus {
-            border-color: #2980b9;
-            box-shadow: 0 0 5px rgba(41, 128, 185, 0.5);
-        }
-
         button {
             padding: 15px;
-            font-size: 1.2em;
+            font-size: 1.1rem;
             width: 100%;
             color: white;
             border: none;
@@ -109,58 +83,37 @@
         }
 
         #startButton {
-            background-color: #000; /* 진한 검은색 */
-            color: white; /* 흰색 텍스트 */
+            background-color: #000;
             font-weight: bold;
         }
 
-        #startButton:hover {
-            background-color: #333; /* 호버 시 밝은 검정 */
-        }
-
-        /* 음성 듣기, 제출, 다음으로 넘기기 버튼 색상 */
         #listenButton {
-            background-color: #e74c3c; /* 진한 빨간색 */
-        }
-
-        #listenButton:hover {
-            background-color: #c0392b; /* 더 진한 빨간색 */
+            background-color: #e74c3c;
         }
 
         #submitButton {
-            background-color: #3498db; /* 파란색 */
-        }
-
-        #submitButton:hover {
-            background-color: #2980b9; /* 더 진한 파란색 */
+            background-color: #3498db;
         }
 
         #skipButton {
-            background-color: #f39c12; /* 주황색 */
-        }
-
-        #skipButton:hover {
-            background-color: #e67e22; /* 더 진한 주황색 */
+            background-color: #f39c12;
         }
 
         .home-btn {
             background-color: #27ae60;
         }
 
-        .home-btn:hover {
-            background-color: #2ecc71;
-        }
-
         #message {
             margin-top: 10px;
             font-size: 1.2em;
             text-align: center;
+            color: #e74c3c;
         }
 
         footer {
             padding: 20px;
             text-align: center;
-            font-size: 0.9em;
+            font-size: 0.9rem;
             color: #7f8c8d;
         }
 
@@ -195,12 +148,7 @@
             justify-content: space-between;
             width: 100%;
             margin-bottom: 15px;
-            font-size: 1.1rem;
-        }
-
-        .button-info {
-            font-size: 0.9em;
-            color: #7f8c8d;
+            font-size: 1rem;
         }
 
     </style>
@@ -209,33 +157,16 @@
 
     <div class="container" id="mainMenu">
         <h1>Word Master: 영어 어휘 도전</h1>
-        <p>재미와 도전을 통해 영어 어휘를 정복하세요</p>
+        <p>빠르고 재미있는 퀴즈로 어휘력을 키우세요.</p>
+        <p>학습의 재미를 경험하세요!</p>
 
-        <p>레벨을 선택하세요:</p>
         <select id="levelSelect">
-            <option value="A1">A1</option>
-            <option value="A2">A2</option>
-            <option value="B1">B1</option>
+            <option value="A1">A1 - 초급</option>
+            <option value="A2">A2 - 중급</option>
+            <option value="B1">B1 - 고급</option>
         </select>
 
         <button id="startButton">게임 시작</button>
-
-        <div class="feature-section">
-            <h2>이 게임이 제공하는 혜택</h2>
-            <ul>
-                <li><strong>재미를 통한 학습</strong>: 재미있고 도전적인 퀴즈를 풀며 어휘력을 키우세요!</li>
-                <li><strong>즉각적인 피드백</strong>: 정답을 맞출 때마다 즉각적으로 피드백을 받아보세요. 실수를 통해 더 빠르게 학습할 수 있습니다.</li>
-                <li><strong>맞춤형 난이도</strong>: 초급부터 고급까지, 자신의 수준에 맞는 난이도를 선택하고 학습하세요.</li>
-                <li><strong>진행 상황 추적</strong>: 게임을 진행하면서 실시간으로 점수와 진척도를 확인할 수 있습니다.</li>
-            </ul>
-        </div>
-
-        <div class="learning-effect">
-            <h2>이 게임을 통해 얻을 수 있는 효과</h2>
-            <p><strong>어휘력 확장</strong>: 다양한 카테고리의 새로운 단어와 구문을 학습하며 어휘력을 확장하세요.</p>
-            <p><strong>실시간 학습</strong>: 빠른 생각과 실시간 학습을 통해 기억력을 강화하고 즉시 적용하세요.</p>
-            <p><strong>필수 어휘 습득</strong>: 일상 회화부터 학업용 어휘까지, 중요한 영어 단어들을 완벽히 익히세요.</p>
-        </div>
     </div>
 
     <div class="container" id="gameContainer" style="display:none;">
@@ -249,19 +180,17 @@
             <input type="text" id="englishInput" placeholder="영어 단어를 입력하세요" onkeypress="handleKeyPress(event)">
         </div>
 
-        <div id="imageContainer">
-            <img id="wordImage" src="" alt="단어 이미지" style="display: none; max-width: 100%; border-radius: 12px; box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);">
-        </div>
+        <!-- 메시지를 제출 버튼 위로 이동 -->
+        <p id="message"></p>
 
-        <button id="listenButton" onclick="playWordAudio()">음성 듣기 <span class="button-info">(PC에서만 지원)</span></button>
+        <!-- 제출, 다음으로 넘기기, 음성 듣기 순서로 변경 -->
         <button id="submitButton" onclick="checkAnswer()">제출</button>
         <button id="skipButton" class="next-btn" onclick="skipWord()">다음으로 넘기기</button>
+        <button id="listenButton" onclick="playWordAudio()">음성 듣기</button>
 
         <div class="progress-bar">
             <div class="progress-bar-fill" id="progressBar"></div>
         </div>
-
-        <p id="message"></p>
 
         <button class="home-btn" onclick="goHome()">홈으로 돌아가기</button>
 
@@ -273,7 +202,7 @@
     </div>
 
     <footer>
-        사이트 제작: 김성실 | 장애 문의: <a href="mailto:sungsil.kim@lcnine.kr">sungsil.kim@lcnine.kr</a>
+        제작: 김성실 | 문의: <a href="mailto:sungsil.kim@lcnine.kr">sungsil.kim@lcnine.kr</a>
     </footer>
 
     <script>
@@ -445,7 +374,7 @@
         }
 
         function handleKeyPress(event) {
-            if (event.key === "Enter") {
+            if (event.key === "Enter" || event.key === "Process") {
                 checkAnswer();
             }
         }
