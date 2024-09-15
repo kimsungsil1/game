@@ -195,9 +195,13 @@
         // 게임 시작 함수 (시작 버튼을 클릭한 후 실행)
         function startGame() {
             const level = document.getElementById('levelSelect').value;
-            document.getElementById('mainMenu').style.display = 'none';
-            document.getElementById('gameContainer').style.display = 'block';
-            loadWords(level);
+            if (level) {
+                document.getElementById('mainMenu').style.display = 'none';
+                document.getElementById('gameContainer').style.display = 'block';
+                loadWords(level);
+            } else {
+                alert("레벨을 선택해주세요!");
+            }
         }
 
         // 배열을 랜덤하게 섞는 함수
@@ -249,8 +253,7 @@
                 document.getElementById('englishInput').style.display = 'none';
                 document.querySelector('.next-btn').style.display = 'none';
                 document.querySelector('.hint-btn').style.display = 'none';
-                document.querySelector('button
-                ').style.display = 'none';
+                document.querySelector('button').style.display = 'none';
             }
         }
 
@@ -260,6 +263,7 @@
 
             if (userAnswer === englishWord.toLowerCase()) {
                 document.getElementById('message').textContent = "정답입니다!";
+                document.getElementById('message').style.color = "#2ecc71"; // 정답일 때 초록
                 document.getElementById('message').style.color = "#2ecc71"; // 정답일 때 초록색
                 currentWordIndex++;
                 setTimeout(() => {
