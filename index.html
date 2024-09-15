@@ -7,29 +7,67 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.2/xlsx.full.min.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
             text-align: center;
-            margin: 20px;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 2.5em;
+            color: #2c3e50;
+        }
+        select {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            outline: none;
         }
         .word-container {
             margin-top: 20px;
         }
         .word-item {
-            margin: 10px 0;
+            font-size: 1.5em;
+            color: #2980b9;
+            margin-bottom: 20px;
         }
         input {
-            padding: 8px;
-            font-size: 16px;
-            width: 300px;
+            padding: 15px;
+            font-size: 18px;
+            width: 60%;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            outline: none;
+            margin-bottom: 20px;
+        }
+        input:focus {
+            border-color: #2ecc71;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            color: white;
+            background-color: #3498db;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
         }
         #message {
             margin-top: 20px;
             font-size: 18px;
-            color: green;
+            color: #e74c3c;
         }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
+        .next-btn {
+            background-color: #95a5a6;
+        }
+        .next-btn:hover {
+            background-color: #7f8c8d;
         }
     </style>
 </head>
@@ -44,15 +82,14 @@
     </select>
 
     <div id="wordContainer" class="word-container">
-        <div class="word-item">
-            <label id="koreanWord">여기에 한글 단어가 표시됩니다</label>
-            <input type="text" id="englishInput" placeholder="영어 단어를 입력하세요">
-        </div>
+        <div class="word-item" id="koreanWord">여기에 한글 단어가 표시됩니다</div>
+        <input type="text" id="englishInput" placeholder="영어 단어를 입력하세요">
     </div>
 
     <p id="message"></p>
 
     <button onclick="checkAnswer()">제출</button>
+    <button class="next-btn" onclick="skipWord()">다음으로 넘기기</button>
 
     <script>
         let correctWords = [];
@@ -90,9 +127,11 @@
                 document.getElementById('koreanWord').textContent = koreanWord;
                 document.getElementById('englishInput').value = '';
                 document.getElementById('message').textContent = '';
+                document.getElementById('englishInput').focus();
             } else {
                 document.getElementById('koreanWord').textContent = '축하합니다! 모든 단어를 맞추셨습니다!';
                 document.getElementById('englishInput').style.display = 'none';
+                document.querySelector('button.next-btn').style.display = 'none';
                 document.querySelector('button').style.display = 'none';
             }
         }
@@ -102,11 +141,18 @@
             const userAnswer = document.getElementById('englishInput').value.trim().toLowerCase();
             if (userAnswer === englishWord.toLowerCase()) {
                 document.getElementById('message').textContent = "정답입니다!";
+                document.getElementById('message').style.color = "#2ecc71"; // 정답일 때는 초록색
                 currentWordIndex++;
-                displayNextWord();
+                setTimeout(displayNextWord, 1000); // 1초 후 다음 단어 표시
             } else {
                 document.getElementById('message').textContent = "틀렸습니다. 다시 시도해 보세요.";
+                document.getElementById('message').style.color = "#e74c3c"; // 틀렸을 때는 빨간색
             }
+        }
+
+        function skipWord() {
+            currentWordIndex++;
+            displayNextWord();
         }
 
         // 처음 시작할 때 A1 레벨 단어 로드
