@@ -99,6 +99,19 @@
             transition: width 0.5s ease;
         }
 
+        .home-btn {
+            background-color: #27ae60;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .home-btn:hover {
+            background-color: #2ecc71;
+        }
+
         footer {
             margin-top: 40px;
             font-size: 0.9em;
@@ -140,6 +153,9 @@
         </div>
 
         <p id="message"></p>
+
+        <!-- 홈으로 돌아가는 버튼 추가 -->
+        <button class="home-btn" onclick="goHome()">홈으로 돌아가기</button>
     </div>
 
     <footer>
@@ -224,11 +240,11 @@
                 // 처음 오답을 입력했을 때, 정답을 알려주고 다시 입력하게 함
                 document.getElementById('message').textContent = `오답입니다. 정답은 '${englishWord}' 입니다. 다시 입력하세요.`;
                 document.getElementById('message').style.color = "#e74c3c"; // 오답일 때 빨간색
-                correctAnswerGiven =
-                true; // 정답이 한 번 표시되면 다시 정답을 입력할 수 있도록 설정
+                correctAnswerGiven = true; // 정답이 한 번 표시되면 다시 정답을 입력할 수 있도록 설정
             } else if (correctAnswerGiven && userAnswer === englishWord.toLowerCase()) {
                 // 정답을 보고 정확히 입력했을 때
-                document.getElementById('message').textContent = "정확하게 입력하셨습니다!";
+                document.getElementById('message').textContent = "
+정확하게 입력하셨습니다!";
                 document.getElementById('message').style.color = "#2ecc71"; // 정답일 때 초록색
                 currentWordIndex++;
                 score += 5; // 정답 입력 시 점수를 조금 더 추가
@@ -252,6 +268,13 @@
                 displayNextWord();
                 updateProgressBar();
             }, 2000); // 2초 후 다음 문제로 넘어감
+        }
+
+        // 홈으로 돌아가는 함수
+        function goHome() {
+            document.getElementById('gameContainer').style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'block';
+            clearInterval(timer); // 홈으로 돌아갈 때 타이머 정지
         }
 
         // 프로그레스 바 업데이트 함수
