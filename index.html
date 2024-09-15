@@ -12,14 +12,16 @@
             color: #333;
             text-align: center;
             padding: 20px;
+            margin: 0;
         }
         h1 {
-            font-size: 2.5em;
+            font-size: 2.2em;
             color: #2c3e50;
+            margin-bottom: 20px;
         }
         select {
             padding: 10px;
-            font-size: 16px;
+            font-size: 1.2em;
             margin-bottom: 20px;
             border: 2px solid #3498db;
             border-radius: 5px;
@@ -29,14 +31,15 @@
             margin-top: 20px;
         }
         .word-item {
-            font-size: 1.5em;
+            font-size: 1.6em;
             color: #2980b9;
             margin-bottom: 20px;
         }
         input {
             padding: 15px;
-            font-size: 18px;
-            width: 60%;
+            font-size: 1.2em;
+            width: 90%;
+            max-width: 500px;
             border: 2px solid #3498db;
             border-radius: 5px;
             outline: none;
@@ -46,21 +49,23 @@
             border-color: #2ecc71;
         }
         button {
-            padding: 10px 20px;
-            font-size: 18px;
+            padding: 15px;
+            font-size: 1.2em;
             color: white;
             background-color: #3498db;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             margin: 10px;
+            width: 45%;
+            max-width: 250px;
         }
         button:hover {
             background-color: #2980b9;
         }
         #message {
             margin-top: 20px;
-            font-size: 18px;
+            font-size: 1.2em;
             color: #e74c3c;
         }
         .next-btn {
@@ -68,6 +73,49 @@
         }
         .next-btn:hover {
             background-color: #7f8c8d;
+        }
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            select {
+                padding: 8px;
+                font-size: 1em;
+            }
+            input {
+                padding: 12px;
+                font-size: 1em;
+            }
+            button {
+                padding: 12px;
+                font-size: 1em;
+                width: 90%;
+            }
+            .word-item {
+                font-size: 1.4em;
+            }
+        }
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5em;
+            }
+            select {
+                padding: 6px;
+                font-size: 0.9em;
+            }
+            input {
+                padding: 10px;
+                font-size: 0.9em;
+            }
+            button {
+                padding: 10px;
+                font-size: 0.9em;
+                width: 90%;
+            }
+            .word-item {
+                font-size: 1.2em;
+            }
         }
     </style>
 </head>
@@ -95,6 +143,15 @@
         let correctWords = [];
         let currentWordIndex = 0;
 
+        // 배열을 랜덤하게 섞는 함수
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
         function loadWords() {
             const level = document.getElementById('levelSelect').value;
             let fileName;
@@ -115,7 +172,7 @@
                     const sheetName = workbook.SheetNames[0];
                     const sheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                    correctWords = jsonData.slice(1); // 첫 번째 행은 헤더이므로 제외
+                    correctWords = shuffleArray(jsonData.slice(1)); // 첫 번째 행은 헤더이므로 제외하고 섞음
                     currentWordIndex = 0; // 처음부터 시작
                     displayNextWord();
                 });
