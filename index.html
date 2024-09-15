@@ -137,7 +137,6 @@
             transition: width 0.5s ease;
         }
 
-        /* 애니메이션 */
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -264,7 +263,6 @@
         function loadWords(level) {
             let fileName;
 
-            // 선택한 레벨에 맞는 파일 이름 설정
             if (level === 'A1') {
                 fileName = 'A1WORD.xlsx';
             } else if (level === 'A2') {
@@ -280,7 +278,8 @@
                     const sheetName = workbook.SheetNames[0];
                     const sheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                    correctWords = shuffleArray(jsonData.slice(1)); // 첫 번째 행은 헤더이므로 제외하고 섞음
+                    correctWords = shuffleArray(jsonData.slice(
+                1)); // 첫 번째 행은 헤더이므로 제외하고 섞음
                     currentWordIndex = 0;
                     hintGiven = false;
                     score = 0;
@@ -324,15 +323,26 @@
                     updateProgressBar();
                 }, 1000); // 1초 후 다음 단어 표시
             } else {
-                document.getElementById('message').textContent = "틀렸습니다. 다시 시도해 보세요.";
+                // 정답을 틀리면 정답을 보여줌
+                document.getElementById('message').textContent = `틀렸습니다. 정답은 '${englishWord}' 입니다.`;
                 document.getElementById('message').style.color = "#e74c3c"; // 틀렸을 때 빨간색
+                currentWordIndex++;
+                setTimeout(() => {
+                    displayNextWord();
+                    updateProgressBar();
+                }, 3000); // 3초 후 다음 단어 표시
             }
         }
 
         function skipWord() {
+            const [englishWord] = correctWords[currentWordIndex];
+            document.getElementById('message').textContent = `정답은 '${englishWord}' 입니다.`;
+            document.getElementById('message').style.color = "#e74c3c"; // 틀렸을 때 빨간색
             currentWordIndex++;
-            updateProgressBar();
-            displayNextWord();
+            setTimeout(() => {
+                updateProgressBar();
+                displayNextWord();
+            }, 3000); // 3초 후 다음 문제로 넘어감
         }
 
         function showHint() {
