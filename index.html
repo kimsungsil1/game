@@ -131,7 +131,7 @@
             <option value="B1">B1</option>
         </select>
 
-        <button onclick="startGame()">게임 시작</button>
+        <button id="startButton">게임 시작</button>
     </div>
 
     <div class="container" id="gameContainer" style="display:none;">
@@ -167,6 +167,8 @@
         let currentWordIndex = 0;
         let score = 0;
         let correctAnswerGiven = false; // 정답을 입력했는지 여부
+
+        document.getElementById('startButton').addEventListener('click', startGame); // 버튼 클릭 시 게임 시작
 
         function startGame() {
             const level = document.getElementById('levelSelect').value;
@@ -233,7 +235,8 @@
         }
 
         function checkAnswer() {
-            const [englishWord] = correctWords[currentWordIndex];
+            const [englishWord
+] = correctWords[currentWordIndex];
             const userAnswer = document.getElementById('englishInput').value.trim().toLowerCase();
 
             if (userAnswer === englishWord.toLowerCase()) {
@@ -245,8 +248,7 @@
                 setTimeout(() => {
                     displayNextWord();
                     updateProgressBar();
-                }, 100
-0); // 1초 후 다음 단어로 넘어감
+                }, 1000); // 1초 후 다음 단어로 넘어감
             } else if (!correctAnswerGiven) {
                 // 처음 오답을 입력했을 때, 정답을 알려주고 다시 입력하게 함
                 document.getElementById('message').textContent = `오답입니다. 정답은 '${englishWord}' 입니다. 다시 입력하세요.`;
@@ -284,7 +286,6 @@
         function goHome() {
             document.getElementById('gameContainer').style.display = 'none';
             document.getElementById('mainMenu').style.display = 'block';
-            clearInterval(timer); // 홈으로 돌아갈 때 타이머 정지
         }
 
         // 프로그레스 바 업데이트 함수
