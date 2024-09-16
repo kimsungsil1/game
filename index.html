@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Word Master: 영어 어휘 도전</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <title>Word Master: 영어 어휘 도전 & 교재 학습</title>
+
+    <!-- PDF.js 및 XLSX 라이브러리 추가 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+
     <style>
         /* Reset */
         * {
@@ -70,12 +74,20 @@
             font-size: 1.1rem;
             width: 100%;
             color: white;
-            border: none;
+            background-color: black;
+            border: 3px solid black;
             border-radius: 8px;
             cursor: pointer;
             margin-bottom: 15px;
             transition: background-color 0.3s ease, transform 0.2s ease;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+        }
+
+        button:disabled {
+            background-color: #e0e0e0;
+            color: #bbb;
+            cursor: not-allowed;
         }
 
         button:hover {
@@ -83,31 +95,19 @@
         }
 
         #startButton {
-            background-color: #000;
+            font-weight: bold;
+        }
+
+        #startButton2 {
+            font-weight: bold;
+        }
+
+        #viewPdfButton {
             font-weight: bold;
         }
 
         #listenButton {
             background-color: #e74c3c;
-        }
-
-        #submitButton {
-            background-color: #3498db;
-        }
-
-        #skipButton {
-            background-color: #f39c12;
-        }
-
-        .home-btn {
-            background-color: #27ae60;
-        }
-
-        #message {
-            margin-top: 10px;
-            font-size: 1.2em;
-            text-align: center;
-            color: #e74c3c;
         }
 
         footer {
@@ -151,6 +151,87 @@
             font-size: 1rem;
         }
 
+        .word-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .option {
+            margin-bottom: 10px;
+            padding: 15px;
+            background-color: #fff;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            width: 100%;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .option:hover {
+            background-color: #ecf0f1;
+        }
+
+        .pdf-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        canvas {
+            width: 100%;
+            border: 1px solid black;
+            margin-bottom: 10px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 800px;
+            margin: 10px auto;
+        }
+
+        .nav-buttons button {
+            padding: 10px 20px;
+            font-size: 1.1rem;
+        }
+
+        .nav-input {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .nav-input input {
+            width: 100px;
+            padding: 15px;
+            font-size: 1.5rem;
+            text-align: center;
+            margin-right: 15px;
+        }
+
+        .nav-input button {
+            padding: 15px 25px;
+            font-size: 1.5rem;
+        }
+
+        /* 모바일 화면에서의 최적화 */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            button {
+                padding: 12px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -162,14 +243,23 @@
 
         <select id="levelSelect">
             <option value="A1">A1 - 초급</option>
-            <option value="A2">A2 - 중급</option>
-            <option value="B1">B1 - 고급</option>
+            <option value="A2">A2 - 초급</option>
+            <option value="B1">B1 - 중급</option>
+            <option value="B2">B2 - 중급</option>
+            <option value="C1">C1 - 고급</option>
         </select>
 
-        <button id="startButton">게임 시작</button>
+        <label for="timeLimit">시간 제한 (초): </label>
+        <input type="number" id="timeLimit" placeholder="30" min="10" max="60">
+
+        <button id="startButton">게임 시작(한글보고 영어입력)</button>
+        <button id="startButton2">게임 시작(영어보고 한글선택)</button>
+
+        <button id="viewPdfButton">교재 보기</button>
     </div>
 
-    <div class="container" id="gameContainer" style="display:none;">
+    <!-- 첫 번째 게임 모드 (한글보고 영어입력) -->
+    <div class="container" id="gameContainer1" style="display:none;">
         <div class="status-bar">
             <div id="scoreDisplay">점수: 0</div>
             <div id="timerDisplay">남은 시간: 30초</div>
@@ -177,13 +267,11 @@
 
         <div class="word-container">
             <div class="word-item" id="koreanWord" style="font-size: 1.5rem; margin-bottom: 20px;">여기에 한글 단어가 표시됩니다</div>
-            <input type="text" id="englishInput" placeholder="영어 단어를 입력하세요" onkeypress="handleKeyPress(event)">
+            <input type="text" id="englishInput" placeholder="영어 단어를 입력하세요" onkeypress="handleKeyPress(event)" autocomplete="off">
         </div>
 
-        <!-- 메시지를 제출 버튼 위로 이동 -->
         <p id="message"></p>
 
-        <!-- 제출, 다음으로 넘기기, 음성 듣기 순서로 변경 -->
         <button id="submitButton" onclick="checkAnswer()">제출</button>
         <button id="skipButton" class="next-btn" onclick="skipWord()">다음으로 넘기기</button>
         <button id="listenButton" onclick="playWordAudio()">음성 듣기</button>
@@ -194,11 +282,56 @@
 
         <button class="home-btn" onclick="goHome()">홈으로 돌아가기</button>
 
-        <!-- 경쾌한 정답 소리 추가 -->
+        <!-- 정답 소리 추가 -->
         <audio id="correctSound">
             <source src="https://actions.google.com/sounds/v1/cartoon/pop.ogg" type="audio/ogg">
             Your browser does not support the audio element.
         </audio>
+    </div>
+
+    <!-- 두 번째 게임 모드 (영어보고 한글선택) -->
+    <div class="container" id="gameContainer2" style="display:none;">
+        <div class="status-bar">
+            <div id="scoreDisplay2">점수: 0</div>
+            <div id="timerDisplay2">남은 시간: 30초</div>
+        </div>
+
+        <div class="word-container">
+            <div class="word-item" id="englishWord" style="font-size: 1.5rem; margin-bottom: 20px;">영어 단어가 여기에 표시됩니다</div>
+        </div>
+
+        <div id="optionsContainer">
+            <div class="option" id="option1" onclick="checkAnswer2('option1')"></div>
+            <div class="option" id="option2" onclick="checkAnswer2('option2')"></div>
+            <div class="option" id="option3" onclick="checkAnswer2('option3')"></div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-bar-fill" id="progressBar2"></div>
+        </div>
+
+        <button class="home-btn" onclick="goHome()">홈으로 돌아가기</button>
+
+        <!-- 정답 소리 추가 -->
+        <audio id="correctSound2">
+            <source src="https://actions.google.com/sounds/v1/cartoon/pop.ogg" type="audio/ogg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+    <!-- 교재 보기 -->
+    <div class="pdf-container" id="pdfContainer" style="display: none;">
+        <h1>교재 보기</h1>
+        <canvas id="pdfCanvas"></canvas>
+        <div class="nav-buttons">
+            <button id="prevButton" onclick="prevPage()">이전 페이지</button>
+            <button id="nextButton" onclick="nextPage()">다음 페이지</button>
+        </div>
+        <div class="nav-input">
+            <input type="number" id="pageNumberInput" placeholder="페이지" min="1">
+            <button onclick="goToPage()">이동</button>
+        </div>
+        <button onclick="goHome()">홈으로 돌아가기</button>
     </div>
 
     <footer>
@@ -213,8 +346,27 @@
         let timeLeft = 30;
         let timer;
         let currentEnglishWord = ""; 
+        let pdfDoc = null,
+            pageNum = 1,
+            pageRendering = false,
+            pageNumPending = null;
 
-        document.getElementById('startButton').addEventListener('click', startGame);
+        let gameMode = 1; // 1: 한글보고 영어입력, 2: 영어보고 한글선택
+
+        // 게임 시작 버튼에 대한 이벤트 리스너
+        document.getElementById('startButton').addEventListener('click', function() {
+            gameMode = 1;
+            startGame();
+        });
+
+        // 영어보고 한글선택 게임 시작 버튼
+        document.getElementById('startButton2').addEventListener('click', function() {
+            gameMode = 2;
+            startGame();
+        });
+
+        // 교재 보기 버튼
+        document.getElementById('viewPdfButton').addEventListener('click', viewPdf);
 
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -226,9 +378,15 @@
 
         function startGame() {
             const level = document.getElementById('levelSelect').value;
+            const timeLimitInput = document.getElementById('timeLimit').value;
+            timeLeft = timeLimitInput ? parseInt(timeLimitInput) : 30; // 사용자 정의 시간 제한 또는 기본 30초
             if (level) {
                 document.getElementById('mainMenu').style.display = 'none';
-                document.getElementById('gameContainer').style.display = 'block';
+                if (gameMode === 1) {
+                    document.getElementById('gameContainer1').style.display = 'block';
+                } else {
+                    document.getElementById('gameContainer2').style.display = 'block';
+                }
                 loadWords(level);
             } else {
                 alert("레벨을 선택해주세요!");
@@ -244,6 +402,10 @@
                 fileName = 'A2WORD.xlsx';
             } else if (level === 'B1') {
                 fileName = 'B1WORD.xlsx';
+            } else if (level === 'B2') {
+                fileName = 'B2WORD.xlsx';
+            } else if (level === 'C1') {
+                fileName = 'C1WORD.xlsx';
             }
 
             fetch(fileName)
@@ -262,30 +424,29 @@
                     currentWordIndex = 0;
                     score = 0;
                     correctAnswerGiven = false;
-                    document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
-                    updateProgressBar();
-                    displayNextWord();
+                    if (gameMode === 1) {
+                        document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
+                        updateProgressBar();
+                        displayNextWord();
+                    } else {
+                        document.getElementById('scoreDisplay2').textContent = `점수: ${score}`;
+                        updateProgressBar2();
+                        displayNextWord2();
+                    }
                 })
                 .catch(error => {
                     alert('단어 파일을 불러오는 중 오류가 발생했습니다: ' + error.message);
                     document.getElementById('mainMenu').style.display = 'block';
-                    document.getElementById('gameContainer').style.display = 'none';
+                    document.getElementById('gameContainer1').style.display = 'none';
+                    document.getElementById('gameContainer2').style.display = 'none';
                 });
         }
 
-        function startTimer() {
-            timeLeft = 30;
-            document.getElementById('timerDisplay').textContent = `남은 시간: ${timeLeft}초`;
-            clearInterval(timer);
-            timer = setInterval(() => {
-                timeLeft--;
-                document.getElementById('timerDisplay').textContent = `남은 시간: ${timeLeft}초`;
-
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    skipWord();
-                }
-            }, 1000);
+        // 음성 듣기 기능
+        function playWordAudio() {
+            const utterance = new SpeechSynthesisUtterance(currentEnglishWord);
+            utterance.lang = 'en-US';
+            speechSynthesis.speak(utterance);
         }
 
         function displayNextWord() {
@@ -295,9 +456,10 @@
                 document.getElementById('koreanWord').textContent = koreanWord;
                 document.getElementById('englishInput').value = '';
                 document.getElementById('message').textContent = '';
+                document.getElementById('englishInput').style.borderColor = "#3498db"; // 초기화
                 document.getElementById('englishInput').focus();
                 correctAnswerGiven = false;
-                startTimer();
+                startTimer(); // 새로운 문제 시작 시 타이머 다시 시작
             } else {
                 document.getElementById('koreanWord').textContent = '축하합니다! 모든 단어를 맞추셨습니다!';
                 document.getElementById('englishInput').style.display = 'none';
@@ -306,10 +468,32 @@
             }
         }
 
-        function playWordAudio() {
-            const utterance = new SpeechSynthesisUtterance(currentEnglishWord);
-            utterance.lang = 'en-US';
-            speechSynthesis.speak(utterance);
+        function displayNextWord2() {
+            if (currentWordIndex < correctWords.length) {
+                const [englishWord, koreanWord] = correctWords[currentWordIndex];
+                document.getElementById('englishWord').textContent = englishWord;
+
+                // 무작위로 3개의 선택지 생성
+                let options = [koreanWord];
+                while (options.length < 3) {
+                    const randomWord = correctWords[Math.floor(Math.random() * correctWords.length)][1];
+                    if (!options.includes(randomWord)) {
+                        options.push(randomWord);
+                    }
+                }
+                shuffleArray(options);
+
+                document.getElementById('option1').textContent = options[0];
+                document.getElementById('option2').textContent = options[1];
+                document.getElementById('option3').textContent = options[2];
+
+                correctAnswerGiven = false;
+                startTimer2(); // 새로운 문제 시작 시 타이머 다시 시작
+            } else {
+                document.getElementById('englishWord').textContent = '축하합니다! 모든 단어를 맞추셨습니다!';
+                document.getElementById('optionsContainer').style.display = 'none';
+                clearInterval(timer);
+            }
         }
 
         function checkAnswer() {
@@ -319,12 +503,10 @@
             if (userAnswer === englishWord.toLowerCase()) {
                 document.getElementById('message').textContent = "정답입니다!";
                 document.getElementById('message').style.color = "#2ecc71";
+                document.getElementById('englishInput').style.borderColor = "#2ecc71"; // 정답 시 테두리 색 변경
                 score += 10;
                 document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
-                
-                // 정답 시 경쾌한 소리 재생
                 document.getElementById('correctSound').play();
-                
                 currentWordIndex++;
                 setTimeout(() => {
                     displayNextWord();
@@ -333,10 +515,12 @@
             } else if (!correctAnswerGiven) {
                 document.getElementById('message').textContent = `오답입니다. 정답은 '${englishWord}' 입니다. 다시 입력하세요.`;
                 document.getElementById('message').style.color = "#e74c3c";
+                document.getElementById('englishInput').style.borderColor = "#e74c3c"; // 오답 시 테두리 색 변경
                 correctAnswerGiven = true;
             } else if (correctAnswerGiven && userAnswer === englishWord.toLowerCase()) {
                 document.getElementById('message').textContent = "정확하게 입력하셨습니다!";
                 document.getElementById('message').style.color = "#2ecc71";
+                document.getElementById('englishInput').style.borderColor = "#2ecc71"; // 다시 정답 맞춤
                 currentWordIndex++;
                 score += 5;
                 document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
@@ -350,21 +534,64 @@
             }
         }
 
-        function skipWord() {
-            const [englishWord] = correctWords[currentWordIndex];
-            document.getElementById('message').textContent = `정답은 '${englishWord}' 입니다. 다음 문제로 넘어갑니다.`;
-            document.getElementById('message').style.color = "#e74c3c";
-            currentWordIndex++;
-            setTimeout(() => {
-                displayNextWord();
-                updateProgressBar();
-            }, 2000);
+        function checkAnswer2(optionId) {
+            const selectedOption = document.getElementById(optionId).textContent;
+            const [englishWord, koreanWord] = correctWords[currentWordIndex];
+
+            if (selectedOption === koreanWord) {
+                document.getElementById('correctSound2').play();
+                score += 10;
+                document.getElementById('scoreDisplay2').textContent = `점수: ${score}`;
+                currentWordIndex++;
+                setTimeout(() => {
+                    displayNextWord2();
+                    updateProgressBar2();
+                }, 1000);
+            } else {
+                alert('오답입니다.');
+            }
         }
 
-        function goHome() {
-            document.getElementById('gameContainer').style.display = 'none';
-            document.getElementById('mainMenu').style.display = 'block';
+        function startTimer() {
+            // 각 문제 시작 시, timeLeft를 초기화
+            const timeLimitInput = document.getElementById('timeLimit').value;
+            timeLeft = timeLimitInput ? parseInt(timeLimitInput) : 30; // 시간 초기화
+            
+            document.getElementById('timerDisplay').textContent = `남은 시간: ${timeLeft}초`;
+            clearInterval(timer); // 기존 타이머 클리어
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timerDisplay').textContent = `남은 시간: ${timeLeft}초`;
+
+                if (timeLeft <= 10 && !correctAnswerGiven) {
+                    // 시간 10초 남았을 때 힌트 제공
+                    document.getElementById('message').textContent = `힌트: 단어의 첫 글자는 '${currentEnglishWord[0].toUpperCase()}' 입니다.`;
+                    document.getElementById('message').style.color = "#f1c40f"; // 힌트 색상
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer); // 타이머 중지
+                    skipWord(); // 시간이 끝나면 다음 문제로 넘어감
+                }
+            }, 1000);
+        }
+
+        function startTimer2() {
+            // 두 번째 모드 타이머 초기화
+            const timeLimitInput = document.getElementById('timeLimit').value;
+            timeLeft = timeLimitInput ? parseInt(timeLimitInput) : 30; // 시간 초기화
+            
+            document.getElementById('timerDisplay2').textContent = `남은 시간: ${timeLeft}초`;
             clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timerDisplay2').textContent = `남은 시간: ${timeLeft}초`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    skipWord(); // 시간이 끝나면 다음 문제로 넘어감
+                }
+            }, 1000);
         }
 
         function updateProgressBar() {
@@ -373,15 +600,129 @@
             progressBar.style.width = `${progress}%`;
         }
 
+        function updateProgressBar2() {
+            const progressBar = document.getElementById('progressBar2');
+            const progress = ((currentWordIndex / correctWords.length) * 100).toFixed(2);
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function goHome() {
+            document.getElementById('gameContainer1').style.display = 'none';
+            document.getElementById('gameContainer2').style.display = 'none';
+            document.getElementById('pdfContainer').style.display = 'none'; // 교재 보기 화면 숨기기
+            document.getElementById('mainMenu').style.display = 'block';
+            clearInterval(timer); // 타이머 중지
+        }
+
+        function viewPdf() {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('pdfContainer').style.display = 'block';
+
+            const url = 'abcbook.pdf'; // PDF 파일 경로
+
+            // PDF 파일 로드
+            pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
+                pdfDoc = pdfDoc_;
+                renderPage(pageNum);
+            }).catch(function(error) {
+                alert('PDF 파일을 로드하는 중 오류가 발생했습니다: ' + error.message);
+                document.getElementById('mainMenu').style.display = 'block';
+                document.getElementById('pdfContainer').style.display = 'none';
+            });
+        }
+
+        // 페이지 렌더링 함수
+        function renderPage(num) {
+            pageRendering = true;
+
+            // 페이지 가져오기
+            pdfDoc.getPage(num).then(function(page) {
+                const scale = 1.5;
+                const viewport = page.getViewport({ scale: scale });
+                const canvas = document.getElementById('pdfCanvas');
+                const ctx = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                // 페이지 렌더링
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                const renderTask = page.render(renderContext);
+
+                // 페이지 렌더링이 완료되면 처리
+                renderTask.promise.then(function() {
+                    pageRendering = false;
+
+                    if (pageNumPending !== null) {
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                });
+            });
+        }
+
+        // 이전 페이지 버튼 클릭
+        function prevPage() {
+            if (pageNum <= 1) {
+                return;
+            }
+            pageNum--;
+            renderPage(pageNum);
+        }
+
+        // 다음 페이지 버튼 클릭
+        function nextPage() {
+            if (pageNum >= pdfDoc.numPages) {
+                return;
+            }
+            pageNum++;
+            renderPage(pageNum);
+        }
+
+        // 페이지 번호 입력 후 이동
+        function goToPage() {
+            const pageNumberInput = document.getElementById('pageNumberInput').value;
+            const pageNumber = parseInt(pageNumberInput, 10);
+            if (pageNumber > 0 && pageNumber <= pdfDoc.numPages) {
+                pageNum = pageNumber;
+                renderPage(pageNum);
+            } else {
+                alert('유효한 페이지 번호를 입력하세요.');
+            }
+        }
+
+        // 엔터키 입력 이벤트 처리
         function handleKeyPress(event) {
-            if (event.key === "Enter" || event.key === "Process") {
-                checkAnswer();
+            if (event.key === "Enter" || event.keyCode === 13) {
+                checkAnswer(); // 엔터키를 누르면 정답을 체크
+            }
+        }
+
+        // 단어 넘기기
+        function skipWord() {
+            const [englishWord, koreanWord] = correctWords[currentWordIndex];
+            document.getElementById('message').textContent = `정답은 '${englishWord}' 입니다.`;
+            currentWordIndex++;
+            if (gameMode === 1) {
+                setTimeout(() => {
+                    displayNextWord();
+                    updateProgressBar();
+                }, 2000);
+            } else {
+                setTimeout(() => {
+                    displayNextWord2();
+                    updateProgressBar2();
+                }, 2000);
             }
         }
 
         window.onload = () => {
             document.getElementById('mainMenu').style.display = 'block';
-            document.getElementById('gameContainer').style.display = 'none';
+            document.getElementById('gameContainer1').style.display = 'none';
+            document.getElementById('gameContainer2').style.display = 'none';
+            document.getElementById('pdfContainer').style.display = 'none';
         };
     </script>
 
