@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Word Master: 영어 어휘 도전 & 교재 학습</title>
+    <title>Word Master: 다국어 어휘 도전 & 교재 학습</title>
 
     <!-- PDF.js 및 XLSX 라이브러리 추가 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
@@ -255,9 +255,17 @@
 <body>
 
     <div class="container" id="mainMenu">
-        <h1>Word Master: 영어 어휘 도전</h1>
+        <h1>Word Master: 다국어 어휘 도전</h1>
         <p>빠르고 재미있는 퀴즈로 어휘력을 키우세요.</p>
         <p>학습의 재미를 경험하세요!</p>
+
+        <!-- 언어 선택 -->
+        <select id="languageSelect">
+            <option value="english">English</option>
+            <option value="german">Deutsch (German)</option>
+            <option value="japanese">日本語 (Japanese)</option>
+            <option value="chinese">中文 (Chinese)</option>
+        </select>
 
         <select id="levelSelect">
             <option value="A1">A1 - 초급</option>
@@ -271,7 +279,7 @@
         <input type="number" id="timeLimit" placeholder="30" min="10" max="60">
 
         <button id="startButton">게임 시작(한글보고 영어입력)</button>
-        <button id="startButton2">게임 시작(영어보고 한글선택)</button>
+        <button id="startButton2">게임 시작(영어보고 뜻 선택)</button>
 
         <button id="viewPdfButton">교재 보기</button>
         <button id="startCEFRTest">CEFR 레벨 테스트 시작</button>
@@ -310,7 +318,7 @@
         </audio>
     </div>
 
-    <!-- 두 번째 게임 모드 (영어보고 한글선택) -->
+    <!-- 두 번째 게임 모드 (영어보고 뜻 선택) -->
     <div class="container" id="gameContainer2" style="display:none;">
         <div class="status-bar">
             <div id="scoreDisplay2">점수: 0</div>
@@ -318,7 +326,7 @@
         </div>
 
         <div class="word-container">
-            <div class="word-item" id="englishWord" style="font-size: 1.5rem; margin-bottom: 20px;">영어 단어가 여기에 표시됩니다</div>
+            <div class="word-item" id="englishWord" style="font-size: 1.5rem; margin-bottom: 20px;">단어가 여기에 표시됩니다</div>
         </div>
 
         <div id="optionsContainer">
@@ -394,7 +402,9 @@
             pageRendering = false,
             pageNumPending = null;
 
-        let gameMode = 1; // 1: 한글보고 영어입력, 2: 영어보고 한글선택
+        let gameMode = 1; // 1: 한글보고 영어입력, 2: 영어보고 뜻 선택
+
+        let selectedLanguage = 'english'; // 선택된 언어
 
         // CEFR 테스트 관련 변수
         let cefrQuestions = [];
@@ -431,13 +441,31 @@
             // 필요한 만큼 추가 질문을 여기에 추가하세요.
         ];
 
+        // 언어 선택 이벤트 리스너
+        document.getElementById('languageSelect').addEventListener('change', function() {
+            selectedLanguage = this.value;
+
+            // 언어 선택에 따라 레벨 선택 옵션 및 교재 보기 버튼 표시/숨김
+            if (selectedLanguage === 'english') {
+                document.getElementById('levelSelect').style.display = 'block';
+                document.getElementById('viewPdfButton').style.display = 'block';
+                document.getElementById('startButton').style.display = 'block';
+                document.getElementById('startButton2').style.display = 'block';
+            } else {
+                document.getElementById('levelSelect').style.display = 'none';
+                document.getElementById('viewPdfButton').style.display = 'none';
+                document.getElementById('startButton').style.display = 'none';
+                document.getElementById('startButton2').style.display = 'block';
+            }
+        });
+
         // 게임 시작 버튼에 대한 이벤트 리스너
         document.getElementById('startButton').addEventListener('click', function() {
             gameMode = 1;
             startGame();
         });
 
-        // 영어보고 한글선택 게임 시작 버튼
+        // 뜻 선택 게임 시작 버튼
         document.getElementById('startButton2').addEventListener('click', function() {
             gameMode = 2;
             startGame();
@@ -461,68 +489,123 @@
             const level = document.getElementById('levelSelect').value;
             const timeLimitInput = document.getElementById('timeLimit').value;
             timeLeft = timeLimitInput ? parseInt(timeLimitInput) : 30; // 사용자 정의 시간 제한 또는 기본 30초
-            if (level) {
+
+            if (selectedLanguage) {
                 document.getElementById('mainMenu').style.display = 'none';
-                if (gameMode === 1) {
-                    document.getElementById('gameContainer1').style.display = 'block';
+
+                if (selectedLanguage === 'english') {
+                    // 영어인 경우 선택한 게임 모드에 따라 표시
+                    if (gameMode === 1) {
+                        document.getElementById('gameContainer1').style.display = 'block';
+                    } else {
+                        document.getElementById('gameContainer2').style.display = 'block';
+                    }
                 } else {
+                    // 다른 언어의 경우 클릭하여 선택하는 게임 모드만 제공
+                    gameMode = 2;
                     document.getElementById('gameContainer2').style.display = 'block';
                 }
+
                 loadWords(level);
             } else {
-                alert("레벨을 선택해주세요!");
+                alert("언어를 선택해주세요!");
             }
         }
 
         function loadWords(level) {
-            let fileName;
+            if (selectedLanguage === 'english') {
+                let fileName;
 
-            if (level === 'A1') {
-                fileName = 'A1WORD.xlsx';
-            } else if (level === 'A2') {
-                fileName = 'A2WORD.xlsx';
-            } else if (level === 'B1') {
-                fileName = 'B1WORD.xlsx';
-            } else if (level === 'B2') {
-                fileName = 'B2WORD.xlsx';
-            } else if (level === 'C1') {
-                fileName = 'C1WORD.xlsx';
+                if (level === 'A1') {
+                    fileName = 'A1WORD.xlsx';
+                } else if (level === 'A2') {
+                    fileName = 'A2WORD.xlsx';
+                } else if (level === 'B1') {
+                    fileName = 'B1WORD.xlsx';
+                } else if (level === 'B2') {
+                    fileName = 'B2WORD.xlsx';
+                } else if (level === 'C1') {
+                    fileName = 'C1WORD.xlsx';
+                }
+
+                fetch(fileName)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('파일을 불러오지 못했습니다.');
+                        }
+                        return response.arrayBuffer();
+                    })
+                    .then(data => {
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        const sheet = workbook.Sheets[sheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                        correctWords = shuffleArray(jsonData.slice(1));
+                        currentWordIndex = 0;
+                        score = 0;
+                        correctAnswerGiven = false;
+
+                        if (gameMode === 1) {
+                            document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
+                            document.getElementById('questionCounter').textContent = `0 / ${correctWords.length}`;
+                            updateProgressBar();
+                            displayNextWord();
+                        } else {
+                            document.getElementById('scoreDisplay2').textContent = `점수: ${score}`;
+                            document.getElementById('questionCounter2').textContent = `0 / ${correctWords.length}`;
+                            updateProgressBar2();
+                            displayNextWord2();
+                        }
+                    })
+                    .catch(error => {
+                        alert('단어 파일을 불러오는 중 오류가 발생했습니다: ' + error.message);
+                        document.getElementById('mainMenu').style.display = 'block';
+                        document.getElementById('gameContainer1').style.display = 'none';
+                        document.getElementById('gameContainer2').style.display = 'none';
+                    });
+            } else {
+                // 다른 언어의 경우 샘플 단어를 직접 포함
+                if (selectedLanguage === 'german') {
+                    correctWords = [
+                        ['apple', 'Apfel'],
+                        ['house', 'Haus'],
+                        ['book', 'Buch'],
+                        ['cat', 'Katze'],
+                        ['dog', 'Hund']
+                        // 필요한 만큼 샘플 단어 추가
+                    ];
+                } else if (selectedLanguage === 'japanese') {
+                    correctWords = [
+                        ['apple', 'りんご'],
+                        ['house', '家'],
+                        ['book', '本'],
+                        ['cat', '猫'],
+                        ['dog', '犬']
+                        // 필요한 만큼 샘플 단어 추가
+                    ];
+                } else if (selectedLanguage === 'chinese') {
+                    correctWords = [
+                        ['apple', '苹果'],
+                        ['house', '房子'],
+                        ['book', '书'],
+                        ['cat', '猫'],
+                        ['dog', '狗']
+                        // 필요한 만큼 샘플 단어 추가
+                    ];
+                }
+
+                // 단어 섞기 및 인덱스 초기화
+                correctWords = shuffleArray(correctWords);
+                currentWordIndex = 0;
+                score = 0;
+                correctAnswerGiven = false;
+
+                // 게임 시작
+                document.getElementById('scoreDisplay2').textContent = `점수: ${score}`;
+                document.getElementById('questionCounter2').textContent = `0 / ${correctWords.length}`;
+                updateProgressBar2();
+                displayNextWord2();
             }
-
-            fetch(fileName)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('파일을 불러오지 못했습니다.');
-                    }
-                    return response.arrayBuffer();
-                })
-                .then(data => {
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const sheet = workbook.Sheets[sheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                    correctWords = shuffleArray(jsonData.slice(1));
-                    currentWordIndex = 0;
-                    score = 0;
-                    correctAnswerGiven = false;
-                    if (gameMode === 1) {
-                        document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
-                        document.getElementById('questionCounter').textContent = `0 / ${correctWords.length}`;
-                        updateProgressBar();
-                        displayNextWord();
-                    } else {
-                        document.getElementById('scoreDisplay2').textContent = `점수: ${score}`;
-                        document.getElementById('questionCounter2').textContent = `0 / ${correctWords.length}`;
-                        updateProgressBar2();
-                        displayNextWord2();
-                    }
-                })
-                .catch(error => {
-                    alert('단어 파일을 불러오는 중 오류가 발생했습니다: ' + error.message);
-                    document.getElementById('mainMenu').style.display = 'block';
-                    document.getElementById('gameContainer1').style.display = 'none';
-                    document.getElementById('gameContainer2').style.display = 'none';
-                });
         }
 
         // 음성 듣기 기능
@@ -566,11 +649,23 @@
                     element.classList.remove('correct', 'incorrect'); // 클래스 제거
                 });
 
-                const [englishWord, koreanWord] = correctWords[currentWordIndex];
-                document.getElementById('englishWord').textContent = englishWord;
+                const [word1, word2] = correctWords[currentWordIndex];
+                let questionWord, answerWord;
+
+                if (selectedLanguage === 'english') {
+                    // 영어의 경우 기존 로직 유지
+                    questionWord = word1;
+                    answerWord = word2;
+                } else {
+                    // 다른 언어의 경우
+                    questionWord = word1; // 영어 단어를 표시
+                    answerWord = word2;   // 해당 언어의 단어가 정답
+                }
+
+                document.getElementById('englishWord').textContent = questionWord;
 
                 // 무작위로 3개의 선택지 생성
-                let options = [koreanWord];
+                let options = [answerWord];
                 while (options.length < 3) {
                     const randomWord = correctWords[Math.floor(Math.random() * correctWords.length)][1];
                     if (!options.includes(randomWord)) {
@@ -634,7 +729,14 @@
         function checkAnswer2(optionId) {
             const selectedOptionElement = document.getElementById(optionId);
             const selectedOption = selectedOptionElement.textContent;
-            const [englishWord, koreanWord] = correctWords[currentWordIndex];
+            const [word1, word2] = correctWords[currentWordIndex];
+            let correctAnswer;
+
+            if (selectedLanguage === 'english') {
+                correctAnswer = word2;
+            } else {
+                correctAnswer = word2;
+            }
 
             // 모든 선택지 클릭 비활성화
             const optionElements = document.querySelectorAll('.option');
@@ -642,7 +744,7 @@
                 element.style.pointerEvents = 'none';
             });
 
-            if (selectedOption === koreanWord) {
+            if (selectedOption === correctAnswer) {
                 // 정답일 때 스타일 변경
                 selectedOptionElement.classList.add('correct');
                 document.getElementById('correctSound2').play();
@@ -659,7 +761,7 @@
                 alert('오답입니다.');
                 // 정답인 선택지 표시 (선택 사항)
                 optionElements.forEach(function(element) {
-                    if (element.textContent === koreanWord) {
+                    if (element.textContent === correctAnswer) {
                         element.classList.add('correct'); // 정답인 선택지를 초록색으로 표시
                     }
                 });
@@ -732,6 +834,13 @@
             document.getElementById('cefrTestContainer').style.display = 'none'; // CEFR 테스트 화면 숨기기
             document.getElementById('mainMenu').style.display = 'block';
             clearInterval(timer); // 타이머 중지
+
+            // 게임 컨테이너 초기화
+            document.getElementById('englishInput').style.display = 'block';
+            document.getElementById('submitButton').style.display = 'block';
+            document.getElementById('skipButton').style.display = 'block';
+            document.getElementById('listenButton').style.display = 'block';
+            document.getElementById('optionsContainer').style.display = 'block';
         }
 
         function viewPdf() {
