@@ -175,13 +175,14 @@
 
         .pdf-container {
             width: 100%;
-            max-width: 800px;
+            max-width: 600px; /* 크기 조정 */
             margin: 20px auto;
             text-align: center;
         }
 
         canvas {
-            width: 100%;
+            width: 80%; /* 크기 조정 */
+            max-width: 500px; /* 최대 너비 설정 */
             border: 1px solid black;
             margin-bottom: 10px;
         }
@@ -221,6 +222,10 @@
 
         /* 모바일 화면에서의 최적화 */
         @media (max-width: 600px) {
+            canvas {
+                width: 100%; /* 작은 화면에서는 전체 너비 사용 */
+                max-width: none;
+            }
             body {
                 padding: 10px;
             }
@@ -230,6 +235,19 @@
             button {
                 padding: 12px;
             }
+        }
+
+        /* 정답 및 오답 스타일 */
+        .option.correct {
+            background-color: #2ecc71;
+            color: #fff;
+            border-color: #27ae60;
+        }
+
+        .option.incorrect {
+            background-color: #e74c3c;
+            color: #fff;
+            border-color: #c0392b;
         }
 
     </style>
@@ -256,6 +274,7 @@
         <button id="startButton2">게임 시작(영어보고 한글선택)</button>
 
         <button id="viewPdfButton">교재 보기</button>
+        <button id="startCEFRTest">CEFR 레벨 테스트 시작</button>
     </div>
 
     <!-- 첫 번째 게임 모드 (한글보고 영어입력) -->
@@ -280,11 +299,13 @@
             <div class="progress-bar-fill" id="progressBar"></div>
         </div>
 
+        <div id="questionCounter">0 / 0</div>
+
         <button class="home-btn" onclick="goHome()">홈으로 돌아가기</button>
 
         <!-- 정답 소리 추가 -->
         <audio id="correctSound">
-            <source src="https://actions.google.com/sounds/v1/cartoon/pop.ogg" type="audio/ogg">
+            <source src="https://actions.google.com/sounds/v1/cartoon/ascending_boing.ogg" type="audio/ogg">
             Your browser does not support the audio element.
         </audio>
     </div>
@@ -310,11 +331,13 @@
             <div class="progress-bar-fill" id="progressBar2"></div>
         </div>
 
+        <div id="questionCounter2">0 / 0</div>
+
         <button class="home-btn" onclick="goHome()">홈으로 돌아가기</button>
 
         <!-- 정답 소리 추가 -->
         <audio id="correctSound2">
-            <source src="https://actions.google.com/sounds/v1/cartoon/pop.ogg" type="audio/ogg">
+            <source src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg">
             Your browser does not support the audio element.
         </audio>
     </div>
@@ -332,6 +355,26 @@
             <button onclick="goToPage()">이동</button>
         </div>
         <button onclick="goHome()">홈으로 돌아가기</button>
+    </div>
+
+    <!-- CEFR 레벨 테스트 -->
+    <div class="container" id="cefrTestContainer" style="display:none;">
+        <div class="status-bar">
+            <div id="cefrQuestionCounter">0 / 0</div>
+        </div>
+
+        <div class="word-container">
+            <div class="word-item" id="cefrQuestion" style="font-size: 1.5rem; margin-bottom: 20px;">질문이 여기에 표시됩니다</div>
+        </div>
+
+        <div id="cefrOptionsContainer">
+            <div class="option" id="cefrOption1" onclick="checkCEFRAnswer('cefrOption1')"></div>
+            <div class="option" id="cefrOption2" onclick="checkCEFRAnswer('cefrOption2')"></div>
+            <div class="option" id="cefrOption3" onclick="checkCEFRAnswer('cefrOption3')"></div>
+            <div class="option" id="cefrOption4" onclick="checkCEFRAnswer('cefrOption4')"></div>
+        </div>
+
+        <button class="home-btn" onclick="goHome()">홈으로 돌아가기</button>
     </div>
 
     <footer>
@@ -353,6 +396,41 @@
 
         let gameMode = 1; // 1: 한글보고 영어입력, 2: 영어보고 한글선택
 
+        // CEFR 테스트 관련 변수
+        let cefrQuestions = [];
+        let cefrCurrentIndex = 0;
+        let cefrScore = 0;
+
+        // CEFR 테스트 질문 데이터 (직접 포함)
+        const cefrTestQuestions = [
+            {
+                "question": "What is the capital of France?",
+                "options": ["Paris", "Berlin", "Madrid", "Rome"],
+                "answer": "Paris"
+            },
+            {
+                "question": "Choose the correct form: I _____ to the store yesterday.",
+                "options": ["go", "went", "gone", "going"],
+                "answer": "went"
+            },
+            {
+                "question": "Which word is an adjective?",
+                "options": ["Quickly", "Beauty", "Beautiful", "Run"],
+                "answer": "Beautiful"
+            },
+            {
+                "question": "Fill in the blank: She has been working here _____ 2010.",
+                "options": ["for", "since", "at", "in"],
+                "answer": "since"
+            },
+            {
+                "question": "Which is a synonym of 'begin'?",
+                "options": ["End", "Start", "Finish", "Close"],
+                "answer": "Start"
+            }
+            // 필요한 만큼 추가 질문을 여기에 추가하세요.
+        ];
+
         // 게임 시작 버튼에 대한 이벤트 리스너
         document.getElementById('startButton').addEventListener('click', function() {
             gameMode = 1;
@@ -367,6 +445,9 @@
 
         // 교재 보기 버튼
         document.getElementById('viewPdfButton').addEventListener('click', viewPdf);
+
+        // CEFR 레벨 테스트 시작 버튼
+        document.getElementById('startCEFRTest').addEventListener('click', startCEFRTest);
 
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -426,10 +507,12 @@
                     correctAnswerGiven = false;
                     if (gameMode === 1) {
                         document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
+                        document.getElementById('questionCounter').textContent = `0 / ${correctWords.length}`;
                         updateProgressBar();
                         displayNextWord();
                     } else {
                         document.getElementById('scoreDisplay2').textContent = `점수: ${score}`;
+                        document.getElementById('questionCounter2').textContent = `0 / ${correctWords.length}`;
                         updateProgressBar2();
                         displayNextWord2();
                     }
@@ -460,16 +543,29 @@
                 document.getElementById('englishInput').focus();
                 correctAnswerGiven = false;
                 startTimer(); // 새로운 문제 시작 시 타이머 다시 시작
+                document.getElementById('questionCounter').textContent = `${currentWordIndex + 1} / ${correctWords.length}`;
             } else {
                 document.getElementById('koreanWord').textContent = '축하합니다! 모든 단어를 맞추셨습니다!';
                 document.getElementById('englishInput').style.display = 'none';
-                document.querySelector('button').style.display = 'none';
+                document.getElementById('submitButton').style.display = 'none';
+                document.getElementById('skipButton').style.display = 'none';
+                document.getElementById('listenButton').style.display = 'none';
                 clearInterval(timer);
             }
         }
 
         function displayNextWord2() {
             if (currentWordIndex < correctWords.length) {
+                // 선택지 스타일 초기화
+                const optionElements = document.querySelectorAll('.option');
+                optionElements.forEach(function(element) {
+                    element.style.backgroundColor = ''; // 배경색 초기화
+                    element.style.color = ''; // 글자색 초기화
+                    element.style.borderColor = '#3498db'; // 테두리 색상 초기화
+                    element.style.pointerEvents = 'auto'; // 클릭 가능하도록 설정
+                    element.classList.remove('correct', 'incorrect'); // 클래스 제거
+                });
+
                 const [englishWord, koreanWord] = correctWords[currentWordIndex];
                 document.getElementById('englishWord').textContent = englishWord;
 
@@ -489,6 +585,7 @@
 
                 correctAnswerGiven = false;
                 startTimer2(); // 새로운 문제 시작 시 타이머 다시 시작
+                document.getElementById('questionCounter2').textContent = `${currentWordIndex + 1} / ${correctWords.length}`;
             } else {
                 document.getElementById('englishWord').textContent = '축하합니다! 모든 단어를 맞추셨습니다!';
                 document.getElementById('optionsContainer').style.display = 'none';
@@ -535,10 +632,19 @@
         }
 
         function checkAnswer2(optionId) {
-            const selectedOption = document.getElementById(optionId).textContent;
+            const selectedOptionElement = document.getElementById(optionId);
+            const selectedOption = selectedOptionElement.textContent;
             const [englishWord, koreanWord] = correctWords[currentWordIndex];
 
+            // 모든 선택지 클릭 비활성화
+            const optionElements = document.querySelectorAll('.option');
+            optionElements.forEach(function(element) {
+                element.style.pointerEvents = 'none';
+            });
+
             if (selectedOption === koreanWord) {
+                // 정답일 때 스타일 변경
+                selectedOptionElement.classList.add('correct');
                 document.getElementById('correctSound2').play();
                 score += 10;
                 document.getElementById('scoreDisplay2').textContent = `점수: ${score}`;
@@ -548,7 +654,20 @@
                     updateProgressBar2();
                 }, 1000);
             } else {
+                // 오답일 때 스타일 변경
+                selectedOptionElement.classList.add('incorrect');
                 alert('오답입니다.');
+                // 정답인 선택지 표시 (선택 사항)
+                optionElements.forEach(function(element) {
+                    if (element.textContent === koreanWord) {
+                        element.classList.add('correct'); // 정답인 선택지를 초록색으로 표시
+                    }
+                });
+                currentWordIndex++;
+                setTimeout(() => {
+                    displayNextWord2();
+                    updateProgressBar2();
+                }, 1000);
             }
         }
 
@@ -596,13 +715,13 @@
 
         function updateProgressBar() {
             const progressBar = document.getElementById('progressBar');
-            const progress = ((currentWordIndex / correctWords.length) * 100).toFixed(2);
+            const progress = (Math.log(currentWordIndex + 1) / Math.log(correctWords.length + 1)) * 100;
             progressBar.style.width = `${progress}%`;
         }
 
         function updateProgressBar2() {
             const progressBar = document.getElementById('progressBar2');
-            const progress = ((currentWordIndex / correctWords.length) * 100).toFixed(2);
+            const progress = (Math.log(currentWordIndex + 1) / Math.log(correctWords.length + 1)) * 100;
             progressBar.style.width = `${progress}%`;
         }
 
@@ -610,6 +729,7 @@
             document.getElementById('gameContainer1').style.display = 'none';
             document.getElementById('gameContainer2').style.display = 'none';
             document.getElementById('pdfContainer').style.display = 'none'; // 교재 보기 화면 숨기기
+            document.getElementById('cefrTestContainer').style.display = 'none'; // CEFR 테스트 화면 숨기기
             document.getElementById('mainMenu').style.display = 'block';
             clearInterval(timer); // 타이머 중지
         }
@@ -637,7 +757,7 @@
 
             // 페이지 가져오기
             pdfDoc.getPage(num).then(function(page) {
-                const scale = 1.5;
+                const scale = 1.0; // 스케일 조정하여 크기 감소
                 const viewport = page.getViewport({ scale: scale });
                 const canvas = document.getElementById('pdfCanvas');
                 const ctx = canvas.getContext('2d');
@@ -718,11 +838,67 @@
             }
         }
 
+        // CEFR 레벨 테스트 시작
+        function startCEFRTest() {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('cefrTestContainer').style.display = 'block';
+            loadCEFRQuestions();
+        }
+
+        function loadCEFRQuestions() {
+            // cefrTestQuestions 배열을 사용하여 질문 로드
+            cefrQuestions = shuffleArray(cefrTestQuestions);
+            cefrCurrentIndex = 0;
+            cefrScore = 0;
+            displayNextCEFRQuestion();
+        }
+
+        function displayNextCEFRQuestion() {
+            if (cefrCurrentIndex < cefrQuestions.length) {
+                const questionData = cefrQuestions[cefrCurrentIndex];
+                document.getElementById('cefrQuestion').textContent = questionData.question;
+                const options = shuffleArray(questionData.options);
+                document.getElementById('cefrOption1').textContent = options[0];
+                document.getElementById('cefrOption2').textContent = options[1];
+                document.getElementById('cefrOption3').textContent = options[2];
+                document.getElementById('cefrOption4').textContent = options[3];
+                document.getElementById('cefrQuestionCounter').textContent = `${cefrCurrentIndex + 1} / ${cefrQuestions.length}`;
+            } else {
+                // 테스트 완료 후 결과 표시
+                const level = determineCEFRLevel(cefrScore);
+                alert(`테스트 완료! 당신의 CEFR 레벨은 ${level} 입니다.`);
+                goHome();
+            }
+        }
+
+        function checkCEFRAnswer(optionId) {
+            const selectedOption = document.getElementById(optionId).textContent;
+            const correctAnswer = cefrQuestions[cefrCurrentIndex].answer;
+
+            if (selectedOption === correctAnswer) {
+                cefrScore++;
+            }
+            cefrCurrentIndex++;
+            setTimeout(() => {
+                displayNextCEFRQuestion();
+            }, 500);
+        }
+
+        function determineCEFRLevel(score) {
+            const percentage = (score / cefrQuestions.length) * 100;
+            if (percentage >= 90) return 'C1';
+            else if (percentage >= 75) return 'B2';
+            else if (percentage >= 60) return 'B1';
+            else if (percentage >= 45) return 'A2';
+            else return 'A1';
+        }
+
         window.onload = () => {
             document.getElementById('mainMenu').style.display = 'block';
             document.getElementById('gameContainer1').style.display = 'none';
             document.getElementById('gameContainer2').style.display = 'none';
             document.getElementById('pdfContainer').style.display = 'none';
+            document.getElementById('cefrTestContainer').style.display = 'none';
         };
     </script>
 
