@@ -8,6 +8,11 @@
     <!-- PDF.js 및 XLSX 라이브러리 추가 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    
+    <!-- Firebase SDK 추가 -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <style>
         /* Reset */
@@ -237,11 +242,84 @@
             }
         }
 
+        /* 추가된 CSS: 로그인 및 회원가입 폼 */
+        .auth-container {
+            max-width: 400px;
+            width: 100%;
+            margin: 20px auto;
+            padding: 30px 20px;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .auth-container.active {
+            display: flex;
+        }
+
+        .auth-container h2 {
+            margin-bottom: 20px;
+            color: #3498db;
+        }
+
+        .auth-container input {
+            padding: 15px;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            outline: none;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .auth-container button {
+            padding: 15px;
+            font-size: 1.1rem;
+            width: 100%;
+            color: white;
+            background-color: #3498db;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+        }
+
+        .auth-container button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .toggle-auth {
+            background-color: transparent;
+            color: #3498db;
+            border: none;
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
     </style>
 </head>
 <body>
 
-    <div class="container" id="mainMenu">
+    <!-- 로그인 및 회원가입 컨테이너 -->
+    <div class="auth-container" id="authContainer">
+        <h2 id="authTitle">로그인</h2>
+        <input type="email" id="authEmail" placeholder="이메일">
+        <input type="password" id="authPassword" placeholder="비밀번호">
+        <button id="authButton">로그인</button>
+        <button class="toggle-auth" id="toggleAuth">회원가입</button>
+    </div>
+
+    <div class="container" id="mainMenu" style="display: none;">
         <h1>Word Master: 영어 어휘 도전</h1>
         <p>빠르고 재미있는 퀴즈로 어휘력을 키우세요.</p>
         <p>학습의 재미를 경험하세요!</p>
@@ -262,6 +340,8 @@
 
         <button id="viewPdfButton">교재 보기</button>
         <button id="startCEFRTest">CEFR 레벨 테스트 시작</button>
+
+        <button id="logoutButton" style="display: none; background-color: #e74c3c;">로그아웃</button>
     </div>
 
     <!-- 첫 번째 게임 모드 (한글보고 영어입력) -->
@@ -280,7 +360,7 @@
 
         <button id="submitButton" onclick="checkAnswer()">제출</button>
         <button id="skipButton" class="next-btn" onclick="skipWord()">다음으로 넘기기</button>
-             <button id="listenButton" onclick="playWordAudio()">음성 듣기</button>
+        <button id="listenButton" onclick="playWordAudio()">음성 듣기</button>
 
         <div class="progress-bar">
             <div class="progress-bar-fill" id="progressBar"></div>
@@ -372,6 +452,137 @@
     </footer>
 
     <script>
+        // Firebase 초기화
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // 인증 관련 요소
+        const authContainer = document.getElementById('authContainer');
+        const authTitle = document.getElementById('authTitle');
+        const authButton = document.getElementById('authButton');
+        const toggleAuth = document.getElementById('toggleAuth');
+        const logoutButton = document.getElementById('logoutButton');
+        const mainMenu = document.getElementById('mainMenu');
+
+        let isLogin = true;
+
+        toggleAuth.addEventListener('click', () => {
+            isLogin = !isLogin;
+            if (isLogin) {
+                authTitle.textContent = '로그인';
+                authButton.textContent = '로그인';
+                toggleAuth.textContent = '회원가입';
+            } else {
+                authTitle.textContent = '회원가입';
+                authButton.textContent = '회원가입';
+                toggleAuth.textContent = '로그인';
+            }
+        });
+
+        authButton.addEventListener('click', () => {
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+
+            if (isLogin) {
+                // 로그인 처리
+                auth.signInWithEmailAndPassword(email, password)
+                    .then(() => {
+                        authContainer.style.display = 'none';
+                        mainMenu.style.display = 'block';
+                        logoutButton.style.display = 'block';
+                        loadUserData();
+                    })
+                    .catch(error => {
+                        alert(error.message);
+                    });
+            } else {
+                // 회원가입 처리
+                auth.createUserWithEmailAndPassword(email, password)
+                    .then(() => {
+                        authContainer.style.display = 'none';
+                        mainMenu.style.display = 'block';
+                        logoutButton.style.display = 'block';
+                        saveUserData();
+                    })
+                    .catch(error => {
+                        alert(error.message);
+                    });
+            }
+        });
+
+        logoutButton.addEventListener('click', () => {
+            auth.signOut().then(() => {
+                mainMenu.style.display = 'none';
+                authContainer.style.display = 'block';
+                logoutButton.style.display = 'none';
+            }).catch(error => {
+                alert(error.message);
+            });
+        });
+
+        // 인증 상태 변화 감지
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                authContainer.style.display = 'none';
+                mainMenu.style.display = 'block';
+                logoutButton.style.display = 'block';
+                loadUserData();
+            } else {
+                authContainer.style.display = 'block';
+                mainMenu.style.display = 'none';
+                logoutButton.style.display = 'none';
+            }
+        });
+
+        // 사용자 데이터 저장 (회원가입 시 초기 데이터 생성)
+        function saveUserData() {
+            const user = auth.currentUser;
+            if (user) {
+                db.collection('users').doc(user.uid).set({
+                    email: user.email,
+                    score: 0,
+                    cefrLevel: 'A1', // 초기 CEFR 레벨 설정
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    console.log('사용자 데이터 저장 완료');
+                }).catch(error => {
+                    console.error('사용자 데이터 저장 오류:', error);
+                });
+            }
+        }
+
+        // 사용자 데이터 불러오기 (로그인 시)
+        function loadUserData() {
+            const user = auth.currentUser;
+            if (user) {
+                db.collection('users').doc(user.uid).get()
+                    .then(doc => {
+                        if (doc.exists) {
+                            const data = doc.data();
+                            console.log('사용자 데이터:', data);
+                            // 필요 시 UI에 사용자 데이터 표시
+                        } else {
+                            // 문서가 없으면 초기 데이터 생성
+                            saveUserData();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('사용자 데이터 불러오기 오류:', error);
+                    });
+            }
+        }
+
+        // 게임 관련 변수 및 데이터
         let correctWords = [];
         let currentWordIndex = 0;
         let score = 0;
@@ -452,7 +663,7 @@
             const timeLimitInput = document.getElementById('timeLimit').value;
             timeLeft = timeLimitInput ? parseInt(timeLimitInput) : 30; // 사용자 정의 시간 제한 또는 기본 30초
             if (level) {
-                document.getElementById('mainMenu').style.display = 'none';
+                mainMenu.style.display = 'none';
                 if (gameMode === 1) {
                     document.getElementById('gameContainer1').style.display = 'block';
                 } else {
@@ -509,7 +720,7 @@
                 })
                 .catch(error => {
                     alert('단어 파일을 불러오는 중 오류가 발생했습니다: ' + error.message);
-                    document.getElementById('mainMenu').style.display = 'block';
+                    mainMenu.style.display = 'block';
                     document.getElementById('gameContainer1').style.display = 'none';
                     document.getElementById('gameContainer2').style.display = 'none';
                 });
@@ -541,6 +752,7 @@
                 document.getElementById('skipButton').style.display = 'none';
                 document.getElementById('listenButton').style.display = 'none';
                 clearInterval(timer);
+                saveScore(); // 게임 종료 시 점수 저장
             }
         }
 
@@ -586,10 +798,18 @@
                 document.getElementById('englishWord').textContent = '축하합니다! 모든 단어를 맞추셨습니다!';
                 document.getElementById('optionsContainer').style.display = 'none';
                 clearInterval(timer);
+                saveScore(); // 게임 종료 시 점수 저장
             }
         }
 
         function checkAnswer() {
+            const user = auth.currentUser;
+            if (!user) {
+                alert("로그인이 필요합니다.");
+                goHome();
+                return;
+            }
+
             const [englishWord] = correctWords[currentWordIndex];
             const userAnswer = document.getElementById('englishInput').value.trim().toLowerCase();
 
@@ -605,29 +825,32 @@
                     displayNextWord();
                     updateProgressBar();
                 }, 1000);
-            } else if (!correctAnswerGiven) {
-                document.getElementById('message').textContent = `오답입니다. 정답은 '${englishWord}' 입니다. 다시 입력하세요.`;
-                document.getElementById('message').style.color = "#e74c3c";
-                document.getElementById('englishInput').style.borderColor = "#e74c3c"; // 오답 시 테두리 색 변경
-                correctAnswerGiven = true;
-            } else if (correctAnswerGiven && userAnswer === englishWord.toLowerCase()) {
-                document.getElementById('message').textContent = "정확하게 입력하셨습니다!";
-                document.getElementById('message').style.color = "#2ecc71";
-                document.getElementById('englishInput').style.borderColor = "#2ecc71"; // 다시 정답 맞춤
-                currentWordIndex++;
-                score += 5;
-                document.getElementById('scoreDisplay').textContent = `점수: ${score}`;
-                setTimeout(() => {
-                    displayNextWord();
-                    updateProgressBar();
-                }, 1000);
             } else {
-                document.getElementById('message').textContent = "정확하게 입력하세요!";
-                document.getElementById('message').style.color = "#e74c3c";
+                // 진동 기능 추가
+                if (navigator.vibrate) {
+                    navigator.vibrate(200); // 200ms 진동
+                }
+
+                if (!correctAnswerGiven) {
+                    document.getElementById('message').textContent = `오답입니다. 정답은 '${englishWord}' 입니다. 다시 입력하세요.`;
+                    document.getElementById('message').style.color = "#e74c3c";
+                    document.getElementById('englishInput').style.borderColor = "#e74c3c"; // 오답 시 테두리 색 변경
+                    correctAnswerGiven = true;
+                } else {
+                    document.getElementById('message').textContent = "정확하게 입력하세요!";
+                    document.getElementById('message').style.color = "#e74c3c";
+                }
             }
         }
 
         function checkAnswer2(optionId) {
+            const user = auth.currentUser;
+            if (!user) {
+                alert("로그인이 필요합니다.");
+                goHome();
+                return;
+            }
+
             const selectedOption = document.getElementById(optionId).textContent;
             const [englishWord, koreanWord] = correctWords[currentWordIndex];
             const messageElement = document.getElementById('message2');
@@ -650,6 +873,11 @@
                     updateProgressBar2();
                 }, 1000);
             } else {
+                // 진동 기능 추가
+                if (navigator.vibrate) {
+                    navigator.vibrate(200); // 200ms 진동
+                }
+
                 messageElement.textContent = "오답입니다. 다시 시도하세요.";
                 messageElement.style.color = "#e74c3c";
 
@@ -673,7 +901,6 @@
 
                 if (timeLeft <= 10 && !correctAnswerGiven) {
                     // 시간 10초 남았을 때 힌트 제공
-                    document.getElementById('message').textContent = `힌트: 단어의 첫 글자는 '${currentEnglishWord[0].toUpperCase()}' 입니다.`;
                     document.getElementById('message').textContent = `힌트: 단어의 첫 글자는 '${currentEnglishWord[0].toUpperCase()}' 입니다.`;
                     document.getElementById('message').style.color = "#f1c40f"; // 힌트 색상
                 }
@@ -720,12 +947,12 @@
             document.getElementById('gameContainer2').style.display = 'none';
             document.getElementById('pdfContainer').style.display = 'none'; // 교재 보기 화면 숨기기
             document.getElementById('cefrTestContainer').style.display = 'none'; // CEFR 테스트 화면 숨기기
-            document.getElementById('mainMenu').style.display = 'block';
+            mainMenu.style.display = 'block';
             clearInterval(timer); // 타이머 중지
         }
 
         function viewPdf() {
-            document.getElementById('mainMenu').style.display = 'none';
+            mainMenu.style.display = 'none';
             document.getElementById('pdfContainer').style.display = 'block';
 
             const url = 'abcbook.pdf'; // PDF 파일 경로
@@ -736,7 +963,7 @@
                 renderPage(pageNum);
             }).catch(function(error) {
                 alert('PDF 파일을 로드하는 중 오류가 발생했습니다: ' + error.message);
-                document.getElementById('mainMenu').style.display = 'block';
+                mainMenu.style.display = 'block';
                 document.getElementById('pdfContainer').style.display = 'none';
             });
         }
@@ -812,32 +1039,44 @@
 
         // 단어 넘기기
         function skipWord() {
-            const [englishWord, koreanWord] = correctWords[currentWordIndex];
-            if (gameMode === 1) {
-                document.getElementById('message').textContent = `정답은 '${englishWord}' 입니다.`;
-                document.getElementById('message').style.color = "#e74c3c";
+            const user = auth.currentUser;
+            if (user) {
+                const [englishWord, koreanWord] = correctWords[currentWordIndex];
+                if (gameMode === 1) {
+                    document.getElementById('message').textContent = `정답은 '${englishWord}' 입니다.`;
+                    document.getElementById('message').style.color = "#e74c3c";
+                } else {
+                    const messageElement = document.getElementById('message2');
+                    messageElement.textContent = `정답은 '${koreanWord}' 입니다.`;
+                    messageElement.style.color = "#e74c3c";
+                }
+                currentWordIndex++;
+                if (gameMode === 1) {
+                    setTimeout(() => {
+                        displayNextWord();
+                        updateProgressBar();
+                    }, 2000);
+                } else {
+                    setTimeout(() => {
+                        displayNextWord2();
+                        updateProgressBar2();
+                    }, 2000);
+                }
             } else {
-                const messageElement = document.getElementById('message2');
-                messageElement.textContent = `정답은 '${koreanWord}' 입니다.`;
-                messageElement.style.color = "#e74c3c";
-            }
-            currentWordIndex++;
-            if (gameMode === 1) {
-                setTimeout(() => {
-                    displayNextWord();
-                    updateProgressBar();
-                }, 2000);
-            } else {
-                setTimeout(() => {
-                    displayNextWord2();
-                    updateProgressBar2();
-                }, 2000);
+                alert("로그인이 필요합니다.");
+                goHome();
             }
         }
 
         // CEFR 레벨 테스트 시작
         function startCEFRTest() {
-            document.getElementById('mainMenu').style.display = 'none';
+            const user = auth.currentUser;
+            if (!user) {
+                alert("로그인이 필요합니다.");
+                return;
+            }
+
+            mainMenu.style.display = 'none';
             document.getElementById('cefrTestContainer').style.display = 'block';
             loadCEFRQuestions();
         }
@@ -864,6 +1103,7 @@
                 // 테스트 완료 후 결과 표시
                 const level = determineCEFRLevel(cefrScore);
                 alert(`테스트 완료! 당신의 CEFR 레벨은 ${level} 입니다.`);
+                saveCEFRScore(level);
                 goHome();
             }
         }
@@ -890,16 +1130,49 @@
             else return 'A1';
         }
 
+        // 게임 종료 시 점수 저장
+        function saveScore() {
+            const user = auth.currentUser;
+            if (user) {
+                const userRef = db.collection('users').doc(user.uid);
+                userRef.get().then(doc => {
+                    if (doc.exists) {
+                        const currentScore = doc.data().score || 0;
+                        userRef.update({
+                            score: currentScore + score,
+                            lastPlayed: firebase.firestore.FieldValue.serverTimestamp()
+                        }).then(() => {
+                            console.log('점수 업데이트 완료');
+                        }).catch(error => {
+                            console.error('점수 업데이트 오류:', error);
+                        });
+                    }
+                }).catch(error => {
+                    console.error('사용자 데이터 가져오기 오류:', error);
+                });
+            }
+        }
+
+        // CEFR 테스트 완료 시 레벨 저장
+        function saveCEFRScore(level) {
+            const user = auth.currentUser;
+            if (user) {
+                const userRef = db.collection('users').doc(user.uid);
+                userRef.update({
+                    cefrLevel: level,
+                    lastCEFRTest: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    console.log('CEFR 레벨 업데이트 완료');
+                }).catch(error => {
+                    console.error('CEFR 레벨 업데이트 오류:', error);
+                });
+            }
+        }
+
         window.onload = () => {
-            document.getElementById('mainMenu').style.display = 'block';
-            document.getElementById('gameContainer1').style.display = 'none';
-            document.getElementById('gameContainer2').style.display = 'none';
-            document.getElementById('pdfContainer').style.display = 'none';
-            document.getElementById('cefrTestContainer').style.display = 'none';
+            // 초기 상태 설정은 Firebase 인증 상태 변경 이벤트에서 처리
         };
     </script>
 
 </body>
 </html>
-
-
