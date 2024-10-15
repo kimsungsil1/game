@@ -30,7 +30,7 @@
             y: 150,
             width: 20,
             height: 20,
-            gravity: 1.5,
+            gravity: 0.6,
             lift: -15,
             velocity: 0
         };
@@ -39,6 +39,7 @@
         let frameCount = 0;
         const pipeWidth = 40;
         const gapHeight = 100;
+        let isGameOver = false;
 
         function drawBird() {
             ctx.fillStyle = '#FFD700';
@@ -58,6 +59,8 @@
             bird.y += bird.velocity;
 
             if (bird.y + bird.height >= canvas.height) {
+                bird.y = canvas.height - bird.height;
+                bird.velocity = 0;
                 gameOver();
             }
             if (bird.y <= 0) {
@@ -93,18 +96,23 @@
         }
 
         function gameOver() {
-            alert('게임 오버!');
-            document.location.reload();
+            if (!isGameOver) {
+                isGameOver = true;
+                alert('게임 오버!');
+                document.location.reload();
+            }
         }
 
         function gameLoop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawBird();
-            drawPipes();
-            updateBird();
-            updatePipes();
-            frameCount++;
-            requestAnimationFrame(gameLoop);
+            if (!isGameOver) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawBird();
+                drawPipes();
+                updateBird();
+                updatePipes();
+                frameCount++;
+                requestAnimationFrame(gameLoop);
+            }
         }
 
         document.addEventListener('keydown', () => {
