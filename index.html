@@ -3,129 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>쿠키런 게임</title>
+    <title>플래피 버드 게임</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            line-height: 1.6;
+            background-color: #70c5ce;
             margin: 0;
             padding: 0;
             overflow: hidden;
         }
-        .container {
-            max-width: 800px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #FF6347;
-        }
-        p {
-            color: #333;
-        }
-        .game {
-            margin-top: 20px;
-            text-align: center;
-            position: relative;
-            width: 100%;
-            height: 300px;
-            background-color: #87CEEB;
-            overflow: hidden;
-        }
-        .cookie {
-            position: absolute;
-            bottom: 50px;
-            width: 50px;
-            height: 50px;
-            background-color: #FFD700;
-            border-radius: 50%;
-        }
-        .obstacle {
-            position: absolute;
-            bottom: 50px;
-            width: 30px;
-            height: 50px;
-            background-color: #8B0000;
-        }
-        button {
-            margin-top: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background-color: #70c5ce;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>쿠키런 게임</h1>
-        <p>쿠키런은 데브시스터즈가 개발한 인기 모바일 런닝 게임입니다. 플레이어는 다양한 쿠키 캐릭터와 펫을 조작하여 장애물을 피하고, 가능한 멀리 달리는 것을 목표로 합니다.</p>
-        <div class="game" id="gameArea">
-            <div class="cookie" id="cookie"></div>
-        </div>
-        <button onclick="jump()">점프</button>
-    </div>
+    <canvas id="gameCanvas" width="320" height="480"></canvas>
     <script>
-        const cookie = document.getElementById('cookie');
-        const gameArea = document.getElementById('gameArea');
-        let isJumping = false;
-        let gravity = 0.9;
-        let position = 0;
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
 
-        function jump() {
-            if (isJumping) return;
-            let count = 0;
-            isJumping = true;
-            let upTimer = setInterval(() => {
-                if (count > 15) {
-                    clearInterval(upTimer);
-                    let downTimer = setInterval(() => {
-                        if (count === 0) {
-                            clearInterval(downTimer);
-                            isJumping = false;
-                        }
-                        position -= 5;
-                        count--;
-                        position = position * gravity;
-                        cookie.style.bottom = position + 'px';
-                    }, 20);
-                }
-                position += 30;
-                count++;
-                position = position * gravity;
-                cookie.style.bottom = position + 'px';
-            }, 20);
+        let bird = {
+            x: 50,
+            y: 150,
+            width: 20,
+            height: 20,
+            gravity: 1.5,
+            lift: -15,
+            velocity: 0
+        };
+
+        let pipes = [];
+        let frameCount = 0;
+        const pipeWidth = 40;
+        const gapHeight = 100;
+
+        function drawBird() {
+            ctx.fillStyle = '#FFD700';
+            ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
         }
 
-        function createObstacle() {
-            let obstaclePosition = gameArea.offsetWidth;
-            const obstacle = document.createElement('div');
-            obstacle.classList.add('obstacle');
-            gameArea.appendChild(obstacle);
-            obstacle.style.left = obstaclePosition + 'px';
-
-            let timer = setInterval(() => {
-                obstaclePosition -= 10;
-                obstacle.style.left = obstaclePosition + 'px';
-
-                if (obstaclePosition < -30) {
-                    clearInterval(timer);
-                    gameArea.removeChild(obstacle);
-                }
-
-                if (obstaclePosition > 0 && obstaclePosition < 50 && position < 50) {
-                    alert('게임 오버!');
-                    clearInterval(timer);
-                    location.reload();
-                }
-            }, 20);
-
-            setTimeout(createObstacle, Math.random() * 2000 + 1000);
+        function drawPipes() {
+            ctx.fillStyle = '#228B22';
+            pipes.forEach(pipe => {
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+                ctx.fillRect(pipe.x, pipe.bottom, pipeWidth, canvas.height - pipe.bottom);
+            });
         }
 
-        createObstacle();
+        function updateBird() {
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+
+            if (bird.y + bird.height >= canvas.height) {
+                gameOver();
+            }
+            if (bird.y <= 0) {
+                bird.y = 0;
+                bird.velocity = 0;
+            }
+        }
+
+        function updatePipes() {
+            if (frameCount % 90 === 0) {
+                let topHeight = Math.random() * (canvas.height / 2);
+                let bottomHeight = topHeight + gapHeight;
+                pipes.push({
+                    x: canvas.width,
+                    top: topHeight,
+                    bottom: bottomHeight
+                });
+            }
+
+            pipes.forEach(pipe => {
+                pipe.x -= 2;
+                if (pipe.x + pipeWidth < 0) {
+                    pipes.shift();
+                }
+                if (
+                    bird.x < pipe.x + pipeWidth &&
+                    bird.x + bird.width > pipe.x &&
+                    (bird.y < pipe.top || bird.y + bird.height > pipe.bottom)
+                ) {
+                    gameOver();
+                }
+            });
+        }
+
+        function gameOver() {
+            alert('게임 오버!');
+            document.location.reload();
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBird();
+            drawPipes();
+            updateBird();
+            updatePipes();
+            frameCount++;
+            requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener('keydown', () => {
+            bird.velocity = bird.lift;
+        });
+
+        gameLoop();
     </script>
 </body>
 </html>
