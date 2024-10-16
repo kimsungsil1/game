@@ -1,114 +1,156 @@
-<script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreElement = document.getElementById('score');
-
-    let bird = {
-        x: 50,
-        y: 150,
-        width: 20,
-        height: 20,
-        gravity: 0.3,
-        lift: -10,
-        velocity: 0
-    };
-
-    let pipes = [];
-    let frameCount = 0;
-    const pipeWidth = 40;
-    const gapHeight = 150;
-    let isGameOver = false;
-    let score = 0;
-
-    function drawBird() {
-        ctx.fillStyle = '#FF4500';
-        ctx.beginPath();
-        ctx.arc(bird.x + bird.width / 2, bird.y + bird.height / 2, bird.width / 2, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    function drawPipes() {
-        ctx.fillStyle = '#006400';
-        pipes.forEach(pipe => {
-            ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
-            ctx.fillRect(pipe.x, pipe.bottom, pipeWidth, canvas.height - pipe.bottom);
-        });
-    }
-
-    function updateBird() {
-        bird.velocity += bird.gravity;
-        bird.y += bird.velocity;
-
-        if (bird.y + bird.height >= canvas.height) {
-            bird.y = canvas.height - bird.height;
-            bird.velocity = 0;
-            gameOver();
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>플래피 버드 게임</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(to bottom, #87CEEB, #f0e68c);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
         }
-        if (bird.y <= 0) {
-            bird.y = 0;
-            bird.velocity = 0;
+        canvas {
+            display: block;
+            margin: 20px auto;
+            background-color: #87CEEB;
+            border: 5px solid #FFD700;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.5);
         }
-    }
+        #score {
+            text-align: center;
+            font-size: 24px;
+            color: #FFFFFF;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
 
-    function updatePipes() {
-        if (frameCount % 120 === 0) {
-            let topHeight = Math.random() * (canvas.height / 2);
-            let bottomHeight = topHeight + gapHeight;
-            pipes.push({
-                x: canvas.width,
-                top: topHeight,
-                bottom: bottomHeight
+        // 캔버스 크기를 화면에 맞게 동적으로 설정
+        function resizeCanvas() {
+            canvas.width = window.innerWidth * 0.9;  // 화면 너비의 90% 사용
+            canvas.height = window.innerHeight * 0.7;  // 화면 높이의 70% 사용
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        let bird = {
+            x: 50,
+            y: canvas.height / 2,
+            width: 20,
+            height: 20,
+            gravity: 0.3,
+            lift: -10,
+            velocity: 0
+        };
+
+        let pipes = [];
+        let frameCount = 0;
+        const pipeWidth = 40;
+        const gapHeight = 150;
+        let isGameOver = false;
+        let score = 0;
+
+        function drawBird() {
+            ctx.fillStyle = '#FF4500';
+            ctx.beginPath();
+            ctx.arc(bird.x + bird.width / 2, bird.y + bird.height / 2, bird.width / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawPipes() {
+            ctx.fillStyle = '#006400';
+            pipes.forEach(pipe => {
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+                ctx.fillRect(pipe.x, pipe.bottom, pipeWidth, canvas.height - pipe.bottom);
             });
         }
 
-        pipes.forEach(pipe => {
-            pipe.x -= 2;
-            if (pipe.x + pipeWidth < 0) {
-                pipes.shift();
-                score++;
-                scoreElement.textContent = 'Score: ' + score;
-            }
-            if (
-                bird.x < pipe.x + pipeWidth &&
-                bird.x + bird.width > pipe.x &&
-                (bird.y < pipe.top || bird.y + bird.height > pipe.bottom)
-            ) {
+        function updateBird() {
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+
+            if (bird.y + bird.height >= canvas.height) {
+                bird.y = canvas.height - bird.height;
+                bird.velocity = 0;
                 gameOver();
             }
+            if (bird.y <= 0) {
+                bird.y = 0;
+                bird.velocity = 0;
+            }
+        }
+
+        function updatePipes() {
+            if (frameCount % 120 === 0) {
+                let topHeight = Math.random() * (canvas.height / 2);
+                let bottomHeight = topHeight + gapHeight;
+                pipes.push({
+                    x: canvas.width,
+                    top: topHeight,
+                    bottom: bottomHeight
+                });
+            }
+
+            pipes.forEach(pipe => {
+                pipe.x -= 2;
+                if (pipe.x + pipeWidth < 0) {
+                    pipes.shift();
+                    score++;
+                    scoreElement.textContent = 'Score: ' + score;
+                }
+                if (
+                    bird.x < pipe.x + pipeWidth &&
+                    bird.x + bird.width > pipe.x &&
+                    (bird.y < pipe.top || bird.y + bird.height > pipe.bottom)
+                ) {
+                    gameOver();
+                }
+            });
+        }
+
+        function gameOver() {
+            if (!isGameOver) {
+                isGameOver = true;
+                setTimeout(() => {
+                    alert('게임 오버! 최종 점수: ' + score);
+                    document.location.reload();
+                }, 100);
+            }
+        }
+
+        function gameLoop() {
+            if (!isGameOver) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawBird();
+                drawPipes();
+                updateBird();
+                updatePipes();
+                frameCount++;
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // 키보드 및 터치 이벤트로 새를 띄움
+        document.addEventListener('keydown', () => {
+            bird.velocity = bird.lift;
         });
-    }
 
-    function gameOver() {
-        if (!isGameOver) {
-            isGameOver = true;
-            setTimeout(() => {
-                alert('게임 오버! 최종 점수: ' + score);
-                document.location.reload();
-            }, 100);
-        }
-    }
+        document.addEventListener('touchstart', () => {
+            bird.velocity = bird.lift;
+        });
 
-    function gameLoop() {
-        if (!isGameOver) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawBird();
-            drawPipes();
-            updateBird();
-            updatePipes();
-            frameCount++;
-            requestAnimationFrame(gameLoop);
-        }
-    }
-
-    // 키보드 또는 터치 이벤트로 새를 띄움
-    document.addEventListener('keydown', () => {
-        bird.velocity = bird.lift;
-    });
-
-    // 터치 이벤트 추가
-    document.addEventListener('touchstart', () => {
-        bird.velocity = bird.lift;
-    });
-
-    gameLoop();
-</script>
+        gameLoop();
+    </script>
+</body>
+</html>
